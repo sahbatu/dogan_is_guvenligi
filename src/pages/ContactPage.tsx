@@ -1,0 +1,169 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react'
+import { LEGAL_PATHS } from '@/lib/legal-defaults'
+import { PageHeader } from '@/components/layout/PageMeta'
+import { PageSeo } from '@/components/seo/PageSeo'
+import { useSiteData } from '@/contexts/SiteDataContext'
+import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
+import { images } from '@/data/images'
+import { FadeIn } from '@/components/ui/FadeIn'
+import { Card } from '@/components/ui/Card'
+import { Input } from '@/components/ui/Input'
+import { Textarea } from '@/components/ui/Textarea'
+import { Button } from '@/components/ui/Button'
+
+export function ContactPage() {
+  const { settings, getSection } = useSiteData()
+  const contactData = getSection('contact', 'main') as { subtitle?: string; successMessage?: string }
+  const [submitted, setSubmitted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [subject, setSubject] = useState('')
+  const [message, setMessage] = useState('')
+  const [kvkkConsent, setKvkkConsent] = useState(false)
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError(null)
+    if (!kvkkConsent) {
+      setError('Devam etmek için KVKK aydınlatma metnini kabul etmelisiniz.')
+      return
+    }
+    const fullMessage = subject ? `Konu: ${subject}\n\n${message}` : message
+    const consentAt = new Date().toISOString()
+    if (isSupabaseConfigured) {
+      const { error: err } = await getSupabase()!.from('contact_submissions').insert({
+        name,
+        email,
+        phone: phone || null,
+        message: fullMessage,
+        kvkk_consent: true,
+        kvkk_consent_at: consentAt,
+      })
+      if (err) {
+        setError('Mesaj gönderilemedi. Lütfen tekrar deneyin.')
+        return
+      }
+    }
+    setSubmitted(true)
+  }
+
+  const contactInfo = [
+    { icon: MapPin, label: 'Adres', value: `${settings.address}, ${settings.city}` },
+    { icon: Phone, label: 'Telefon', value: settings.phone, href: `tel:${settings.phone_raw}` },
+    { icon: Mail, label: 'E-posta', value: settings.email, href: `mailto:${settings.email}` },
+    { icon: Clock, label: 'Çalışma Saatleri', value: settings.working_hours },
+  ]
+
+  return (
+    <>
+      <PageSeo
+        path="/iletisim"
+        fallbackTitle="İletişim"
+        fallbackDescription={`${settings.company_name} iletişim bilgileri.`}
+        breadcrumbs={[
+          { name: 'Ana Sayfa', path: '/' },
+          { name: 'İletişim', path: '/iletisim' },
+        ]}
+      />
+      <PageHeader
+        title="İletişim"
+        subtitle={contactData.subtitle ?? 'Sorularınız ve teklif talepleriniz için bizimle iletişime geçin.'}
+        banner={images.banners.contact}
+      />
+
+      <section className="py-20 lg:py-28">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid gap-12 lg:grid-cols-5">
+            <FadeIn className="lg:col-span-2 space-y-6">
+              {contactInfo.map((item) => (
+                <Card key={item.label} className="flex items-start gap-4 border-transparent bg-surface/50">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-navy-900 text-white">
+                    <item.icon className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-muted">{item.label}</p>
+                    {item.href ? (
+                      <a href={item.href} className="mt-1 block font-semibold text-navy-900 hover:text-accent-600">
+                        {item.value}
+                      </a>
+                    ) : (
+                      <p className="mt-1 font-semibold text-navy-900">{item.value}</p>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </FadeIn>
+
+            <FadeIn delay={0.15} className="lg:col-span-3">
+              <Card className="border-transparent shadow-lg shadow-navy-900/5">
+                <h2 className="text-2xl font-bold text-navy-900">Mesaj Gönderin</h2>
+                <p className="mt-2 text-muted">Formu doldurun, en kısa sürede size dönüş yapalım.</p>
+
+                {submitted ? (
+                  <div className="mt-8 rounded-xl bg-accent-600/10 p-8 text-center">
+                    <p className="text-lg font-semibold text-accent-600">Mesajınız alındı!</p>
+                    <p className="mt-2 text-muted">
+                      {contactData.successMessage ?? 'En kısa sürede sizinle iletişime geçeceğiz.'}
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                    {error && <p className="text-sm text-red-600">{error}</p>}
+                    <div className="grid gap-5 sm:grid-cols-2">
+                      <Input label="Ad Soyad" required value={name} onChange={(e) => setName(e.target.value)} />
+                      <Input label="E-posta" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                    </div>
+                    <Input label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    <Input label="Konu" required value={subject} onChange={(e) => setSubject(e.target.value)} />
+                    <Textarea label="Mesajınız" required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} />
+                    <label className="flex items-start gap-2.5 text-sm text-muted">
+                      <input
+                        type="checkbox"
+                        checked={kvkkConsent}
+                        onChange={(e) => setKvkkConsent(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 shrink-0 rounded"
+                        required
+                      />
+                      <span>
+                        <Link to={LEGAL_PATHS.kvkk} className="font-medium text-accent-600 hover:underline" target="_blank" rel="noopener noreferrer">
+                          KVKK Aydınlatma Metni
+                        </Link>
+                        &apos;ni okudum; kişisel verilerimin belirtilen amaçlarla işlenmesini kabul ediyorum.
+                      </span>
+                    </label>
+                    <Button type="submit" size="lg" disabled={!kvkkConsent}>
+                      <Send className="h-4 w-4" />
+                      Gönder
+                    </Button>
+                  </form>
+                )}
+              </Card>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {settings.map_embed_url && (
+        <section className="pb-20">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <FadeIn>
+              <div className="overflow-hidden rounded-3xl ring-1 ring-navy-900/5">
+                <iframe
+                  title="Konum"
+                  src={settings.map_embed_url}
+                  className="h-[400px] w-full border-0 grayscale-[30%] contrast-[1.1]"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
+            </FadeIn>
+          </div>
+        </section>
+      )}
+    </>
+  )
+}

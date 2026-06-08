@@ -1,0 +1,17 @@
+{
+  "name": "Doğan İş Güvenliği",
+  "short_name": "Doğan",
+  "description": "Temizlik ve iş güvenliği ürünleri",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0B1D3A",
+  "lang": "tr",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

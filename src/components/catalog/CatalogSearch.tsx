@@ -22,8 +22,8 @@ export function CatalogSearch({
     <div className={cn('relative', className)}>
       <Search
         className={cn(
-          'absolute top-1/2 -translate-y-1/2 text-muted/70',
-          isHero ? 'left-5 h-5 w-5' : 'left-4 h-4 w-4',
+          'absolute top-1/2 -translate-y-1/2',
+          isHero ? 'left-5 h-5 w-5 text-white/50' : 'left-4 h-4 w-4 text-muted/70',
         )}
       />
       <input
@@ -32,11 +32,10 @@ export function CatalogSearch({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className={cn(
-          'w-full border bg-white text-navy-950 placeholder:text-muted/50 transition-all',
-          'border-navy-900/10 focus:border-navy-900/30 focus:outline-none focus:ring-1 focus:ring-navy-900/10',
+          'w-full rounded-none border transition-all focus:outline-none focus:ring-1',
           isHero
-            ? 'rounded-none border-white/20 py-4 pl-14 pr-12 text-base text-white placeholder:text-white/45 focus:border-white/40 focus:bg-white/5 focus:ring-white/20'
-            : 'rounded-none py-3 pl-11 pr-10 text-sm',
+            ? 'border-white/25 bg-white/10 py-4 pl-14 pr-12 text-base text-white backdrop-blur-sm placeholder:text-white/45 focus:border-white/40 focus:bg-white/15 focus:ring-white/20'
+            : 'border-navy-900/10 bg-white py-3 pl-11 pr-10 text-sm text-navy-950 placeholder:text-muted/50 focus:border-navy-900/30 focus:ring-navy-900/10',
         )}
       />
       {value && (

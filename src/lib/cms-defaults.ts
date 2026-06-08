@@ -52,7 +52,7 @@ export function getDefaultPageSections(): PageSection[] {
       id: 'demo-hero',
       page: 'home',
       section_key: 'hero',
-      data: { badge: 'Kurumsal tedarik', trustItems: ['CE / TSE uyumlu', '48 saat sevkiyat', '15+ yıl deneyim'] },
+      data: { badge: 'Kurumsal tedarik', trustItems: ['CE / TSE uyumlu', '48 saat sevkiyat', '9+ yıl deneyim'] },
       sort_order: 1,
       updated_at: new Date().toISOString(),
     },

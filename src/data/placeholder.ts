@@ -5,7 +5,7 @@ export const company = {
   shortName: 'DOĞAN',
   slogan: 'Temizlik ve iş güvenliğinde güvenilir çözüm ortağınız',
   tagline: 'Profesyonel temizlik malzemeleri ve iş güvenliği ekipmanları',
-  founded: 2009,
+  founded: 2017,
   email: 'info@doganisguvenligi.com',
   phone: '+90 (212) 555 00 00',
   phoneRaw: '+902125550000',
@@ -17,8 +17,8 @@ export const company = {
 }
 
 export const stats = [
-  { value: 500, suffix: '+', label: 'Ürün Çeşidi' },
-  { value: 15, suffix: '+', label: 'Yıllık Deneyim' },
+  { value: 100, suffix: '+', label: 'Ürün Çeşidi' },
+  { value: 9, suffix: '+', label: 'Yıllık Deneyim' },
   { value: 1200, suffix: '+', label: 'Mutlu Müşteri' },
   { value: 48, suffix: ' Saat', label: 'Hızlı Tedarik' },
 ]
@@ -52,7 +52,7 @@ export const services = [
 
 export const aboutContent = {
   intro:
-    'Doğan İş Güvenliği, 2009 yılından bu yana temizlik malzemeleri ve iş güvenliği ekipmanları alanında kurumsal müşterilere hizmet vermektedir. Güvenilir tedarik zinciri, kaliteli ürün portföyü ve müşteri odaklı yaklaşımımızla sektörün tercih edilen markalarından biri haline geldik.',
+    'Doğan İş Güvenliği, 2017 yılından bu yana temizlik malzemeleri ve iş güvenliği ekipmanları alanında kurumsal müşterilere hizmet vermektedir. Güvenilir tedarik zinciri, kaliteli ürün portföyü ve müşteri odaklı yaklaşımımızla sektörün tercih edilen markalarından biri haline geldik.',
   mission:
     'İşletmelerin çalışan sağlığını korumak ve hijyen standartlarını yükseltmek için en uygun, en güvenilir ve en sürdürülebilir çözümleri sunmak temel misyonumuzdur.',
   vision:
@@ -64,10 +64,10 @@ export const aboutContent = {
     { title: 'İnovasyon', description: 'Sektördeki yenilikleri takip eden dinamik ürün gamı.' },
   ],
   timeline: [
-    { year: '2009', title: 'Kuruluş', description: 'İstanbul merkezli olarak faaliyete başladık.' },
-    { year: '2014', title: 'Genişleme', description: 'İş güvenliği ekipmanları portföyünü ekledik.' },
-    { year: '2019', title: 'Kurumsal Büyüme', description: '500+ ürün çeşidine ulaştık.' },
-    { year: '2024', title: 'Dijital Dönüşüm', description: 'E-katalog ve online tedarik süreçlerini hayata geçirdik.' },
+    { year: '2017', title: 'Kuruluş', description: 'İstanbul merkezli olarak faaliyete başladık.' },
+    { year: '2019', title: 'Genişleme', description: 'İş güvenliği ekipmanları portföyünü ekledik.' },
+    { year: '2023', title: 'Kurumsal Büyüme', description: '100+ ürün çeşidine ulaştık.' },
+    { year: '2026', title: 'Dijital Dönüşüm', description: 'Kurumsal web sitesi ve e-katalog platformunu hayata geçirdik.' },
   ],
 }
 

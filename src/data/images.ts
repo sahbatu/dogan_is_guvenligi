@@ -2,7 +2,7 @@ export const images = {
   hero: {
     warehouse: '/images/hero-warehouse.jpg',
     ppe: '/images/hero-ppe.jpg',
-    cleaning: '/images/hero-cleaning.jpg',
+    supply: '/images/cta-warehouse.jpg',
   },
   banners: {
     catalog: '/images/banner-catalog.jpg',

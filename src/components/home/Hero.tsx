@@ -8,10 +8,10 @@ import { Button } from '@/components/ui/Button'
 const trustIcons = [ShieldCheck, Clock, Award]
 
 const collage = [
-  { src: images.hero.warehouse, alt: 'Depo ve tedarik', className: 'row-span-2', rotate: -1 },
-  { src: images.hero.ppe, alt: 'İş güvenliği ekipmanları', className: '', rotate: 2 },
-  { src: images.hero.cleaning, alt: 'Temizlik malzemeleri', className: '', rotate: -2 },
-]
+  { id: 'warehouse', src: images.hero.warehouse, alt: 'Depo ve tedarik', span: 'row-span-2', rotate: -1 },
+  { id: 'ppe', src: images.hero.ppe, alt: 'İş güvenliği ekipmanları', span: '', rotate: 2 },
+  { id: 'supply', src: images.hero.supply, alt: 'Kurumsal tedarik ve lojistik', span: '', rotate: -2 },
+] as const
 
 export function Hero() {
   const { settings, getSection } = useSiteData()
@@ -26,14 +26,14 @@ export function Hero() {
 
   const trustItems = section.trustItems?.length
     ? section.trustItems
-    : ['CE / TSE uyumlu ürünler', '48 saat hızlı tedarik', '15 yılı aşkın sektör deneyimi']
+    : ['CE / TSE uyumlu ürünler', '48 saat hızlı tedarik', '9 yılı aşkın sektör deneyimi']
 
   const miniStats = statsSection.items?.slice(0, 3).map((s) => ({
     value: `${s.value}${s.suffix}`,
     label: s.label,
   })) ?? [
-    { value: '500+', label: 'Ürün' },
-    { value: '15+', label: 'Yıl' },
+    { value: '100+', label: 'Ürün' },
+    { value: '9+', label: 'Yıl' },
     { value: '1200+', label: 'Müşteri' },
   ]
 
@@ -82,25 +82,29 @@ export function Hero() {
             </div>
           </motion.div>
 
-          <div className="grid grid-cols-2 grid-rows-2 gap-3 sm:gap-4">
-            {collage.map((item, i) => (
-              <motion.div
-                key={item.src}
-                initial={{ opacity: 0, x: 24 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
-                className={cnCollage(item.className)}
-                style={{ rotate: `${item.rotate}deg` }}
-              >
-                <div className="h-full overflow-hidden rounded-lg border border-navy-900/10 shadow-lg shadow-navy-900/10">
-                  <img
-                    src={item.src}
-                    alt={item.alt}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </motion.div>
-            ))}
+          <div className="mx-auto w-full max-w-xl lg:max-w-none lg:mx-0">
+            <div className="grid h-[280px] grid-cols-2 grid-rows-2 gap-3 sm:h-[360px] sm:gap-4 lg:h-[400px]">
+              {collage.map((item, i) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, x: 24 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
+                  className={`h-full min-h-0 ${item.span}`}
+                  style={{ rotate: `${item.rotate}deg` }}
+                >
+                  <div className="relative h-full overflow-hidden rounded-lg border border-navy-900/10 shadow-lg shadow-navy-900/10">
+                    <img
+                      src={item.src}
+                      alt={item.alt}
+                      loading={i === 0 ? 'eager' : 'lazy'}
+                      decoding="async"
+                      className="absolute inset-0 h-full w-full object-cover"
+                    />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -123,11 +127,4 @@ export function Hero() {
       </div>
     </section>
   )
-}
-
-function cnCollage(className: string) {
-  if (className.includes('row-span-2')) {
-    return `min-h-[280px] sm:min-h-[360px] ${className}`
-  }
-  return `min-h-[130px] sm:min-h-[170px] ${className}`
 }

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { ContactSubmission } from '@/types/cms'
 import { formatDate } from '@/lib/utils'
+import { sanitizeContactField, CONTACT_LIMITS } from '@/lib/contact-form'
 import { Button } from '@/components/ui/Button'
 
 export function MessagesAdminPage() {
@@ -45,8 +46,13 @@ export function MessagesAdminPage() {
             <div key={m.id} className={`rounded-xl border p-5 ${m.is_read ? 'border-navy-900/5 bg-white' : 'border-accent-600/30 bg-accent-600/5'}`}>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="font-semibold text-navy-900">{m.name}</p>
-                  <p className="text-sm text-muted">{m.email}{m.phone ? ` · ${m.phone}` : ''}</p>
+                  <p className="font-semibold text-navy-900">
+                    {sanitizeContactField(m.name, CONTACT_LIMITS.name)}
+                  </p>
+                  <p className="text-sm text-muted">
+                    {sanitizeContactField(m.email, CONTACT_LIMITS.email)}
+                    {m.phone ? ` · ${sanitizeContactField(m.phone, CONTACT_LIMITS.phone)}` : ''}
+                  </p>
                   <p className="mt-1 text-xs text-muted">{formatDate(m.created_at)}</p>
                 </div>
                 <div className="flex gap-2">
@@ -54,7 +60,9 @@ export function MessagesAdminPage() {
                   <Button size="sm" variant="ghost" onClick={() => remove(m.id)}>Sil</Button>
                 </div>
               </div>
-              <p className="mt-3 text-sm text-navy-900 whitespace-pre-wrap">{m.message}</p>
+              <p className="mt-3 whitespace-pre-wrap break-words text-sm text-navy-900">
+                {sanitizeContactField(m.message, CONTACT_LIMITS.message + CONTACT_LIMITS.subject + 20)}
+              </p>
             </div>
           ))}
         </div>

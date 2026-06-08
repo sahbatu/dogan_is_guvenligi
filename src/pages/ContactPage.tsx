@@ -12,6 +12,13 @@ import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
+import {
+  CONTACT_LIMITS,
+  isContactRateLimited,
+  markContactSubmitted,
+  normalizeContactPhone,
+  validateContactForm,
+} from '@/lib/contact-form'
 
 export function ContactPage() {
   const { settings, getSection } = useSiteData()
@@ -24,30 +31,65 @@ export function ContactPage() {
   const [subject, setSubject] = useState('')
   const [message, setMessage] = useState('')
   const [kvkkConsent, setKvkkConsent] = useState(false)
+  const [honeypot, setHoneypot] = useState('')
+  const [submitting, setSubmitting] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
     if (!kvkkConsent) {
       setError('Devam etmek için KVKK aydınlatma metnini kabul etmelisiniz.')
       return
     }
-    const fullMessage = subject ? `Konu: ${subject}\n\n${message}` : message
-    const consentAt = new Date().toISOString()
-    if (isSupabaseConfigured) {
-      const { error: err } = await getSupabase()!.from('contact_submissions').insert({
-        name,
-        email,
-        phone: phone || null,
-        message: fullMessage,
-        kvkk_consent: true,
-        kvkk_consent_at: consentAt,
-      })
-      if (err) {
-        setError('Mesaj gönderilemedi. Lütfen tekrar deneyin.')
+
+    if (isContactRateLimited()) {
+      setError('Çok sık mesaj gönderildi. Lütfen bir dakika sonra tekrar deneyin.')
+      return
+    }
+
+    const result = validateContactForm({
+      name,
+      email,
+      phone,
+      subject,
+      message,
+      honeypot,
+    })
+
+    if (!result.valid || !result.sanitized) {
+      if (honeypot.trim()) {
+        setSubmitted(true)
         return
       }
+      const firstError = Object.values(result.errors)[0]
+      setError(firstError ?? 'Lütfen formu kontrol edin.')
+      return
     }
+
+    if (!isSupabaseConfigured) {
+      setError('Mesaj servisi şu an kullanılamıyor. Lütfen telefon veya e-posta ile iletişime geçin.')
+      return
+    }
+
+    setSubmitting(true)
+    const consentAt = new Date().toISOString()
+    const { error: err } = await getSupabase()!.from('contact_submissions').insert({
+      name: result.sanitized.name,
+      email: result.sanitized.email,
+      phone: result.sanitized.phone,
+      message: result.sanitized.message,
+      kvkk_consent: true,
+      kvkk_consent_at: consentAt,
+    })
+    setSubmitting(false)
+
+    if (err) {
+      setError('Mesaj gönderilemedi. Lütfen tekrar deneyin.')
+      return
+    }
+
+    markContactSubmitted()
     setSubmitted(true)
   }
 
@@ -111,15 +153,61 @@ export function ContactPage() {
                     </p>
                   </div>
                 ) : (
-                  <form onSubmit={handleSubmit} className="mt-8 space-y-5">
+                  <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
                     {error && <p className="text-sm text-red-600">{error}</p>}
+                    <input
+                      type="text"
+                      name="website"
+                      value={honeypot}
+                      onChange={(e) => setHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden
+                      className="pointer-events-none absolute h-0 w-0 overflow-hidden opacity-0"
+                    />
                     <div className="grid gap-5 sm:grid-cols-2">
-                      <Input label="Ad Soyad" required value={name} onChange={(e) => setName(e.target.value)} />
-                      <Input label="E-posta" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                      <Input
+                        label="Ad Soyad"
+                        required
+                        maxLength={CONTACT_LIMITS.name}
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                      />
+                      <Input
+                        label="E-posta"
+                        type="email"
+                        required
+                        maxLength={CONTACT_LIMITS.email}
+                        autoComplete="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
                     </div>
-                    <Input label="Telefon" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                    <Input label="Konu" required value={subject} onChange={(e) => setSubject(e.target.value)} />
-                    <Textarea label="Mesajınız" required rows={5} value={message} onChange={(e) => setMessage(e.target.value)} />
+                    <Input
+                      label="Telefon"
+                      type="tel"
+                      inputMode="numeric"
+                      maxLength={CONTACT_LIMITS.phone}
+                      autoComplete="tel"
+                      placeholder="05XX XXX XX XX"
+                      value={phone}
+                      onChange={(e) => setPhone(normalizeContactPhone(e.target.value))}
+                    />
+                    <Input
+                      label="Konu"
+                      required
+                      maxLength={CONTACT_LIMITS.subject}
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                    />
+                    <Textarea
+                      label="Mesajınız"
+                      required
+                      rows={5}
+                      maxLength={CONTACT_LIMITS.message}
+                      value={message}
+                      onChange={(e) => setMessage(e.target.value)}
+                    />
                     <label className="flex items-start gap-2.5 text-sm text-muted">
                       <input
                         type="checkbox"
@@ -135,7 +223,7 @@ export function ContactPage() {
                         &apos;ni okudum; kişisel verilerimin belirtilen amaçlarla işlenmesini kabul ediyorum.
                       </span>
                     </label>
-                    <Button type="submit" size="lg" disabled={!kvkkConsent}>
+                    <Button type="submit" size="lg" disabled={!kvkkConsent || submitting}>
                       <Send className="h-4 w-4" />
                       Gönder
                     </Button>

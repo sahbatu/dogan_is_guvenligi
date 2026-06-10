@@ -9,6 +9,8 @@ import { useSiteData } from '@/contexts/SiteDataContext'
 import { useProduct } from '@/hooks/useProducts'
 
 import { ProductPrice } from '@/components/catalog/ProductPrice'
+import { ProductPriceDisclaimer } from '@/components/catalog/ProductPriceDisclaimer'
+import { ProductStockBadge } from '@/components/catalog/ProductStockBadge'
 
 import { ProductGallery } from '@/components/catalog/ProductGallery'
 
@@ -21,6 +23,7 @@ import { RichTextContent } from '@/components/ui/RichTextContent'
 import { stripHtml } from '@/lib/rich-text'
 
 import { normalizeProductImages } from '@/lib/product-images'
+import { getSchemaStockAvailability } from '@/lib/stock'
 import { RecommendedProducts } from '@/components/catalog/RecommendedProducts'
 
 
@@ -133,7 +136,8 @@ export function ProductDetailPage() {
 
                 priceCurrency: 'TRY',
 
-                availability: 'https://schema.org/InStock',
+                availability:
+                  getSchemaStockAvailability(product.stock) ?? 'https://schema.org/InStock',
 
               }
 
@@ -207,11 +211,9 @@ export function ProductDetailPage() {
 
                 <ProductPrice price={product.price} size="lg" />
 
-                {product.price != null && (
+                {product.price != null && <ProductPriceDisclaimer />}
 
-                  <p className="mt-1 text-xs text-muted">Liste fiyatı · KDV dahil</p>
-
-                )}
+                <ProductStockBadge stock={product.stock} className="mt-3" />
 
               </div>
 

@@ -4,6 +4,7 @@ import { useProducts } from '@/hooks/useProducts'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { AdminPageHeader } from '@/components/admin/AdminPageHeader'
 import { ProductForm, type ProductFormData } from '@/components/admin/ProductForm'
+import { buildProductPayload, resolveCategoryId } from '@/lib/product-payload'
 
 export function ProductEditPage() {
   const { productId } = useParams<{ productId?: string }>()
@@ -22,8 +23,16 @@ export function ProductEditPage() {
     const supabase = getSupabase()!
     setError(null)
 
+    const categoryId = resolveCategoryId(data.category_id ?? '', categories)
+    if (!categoryId) {
+      setError('Lütfen bir kategori seçin. Kategori yoksa önce Kategoriler bölümünden ekleyin.')
+      return
+    }
+
+    const payload = buildProductPayload(data, categoryId)
+
     if (isNew) {
-      const { error: err } = await supabase.from('products').insert(data)
+      const { error: err } = await supabase.from('products').insert(payload)
       if (err) {
         setError(err.message)
         return
@@ -31,7 +40,7 @@ export function ProductEditPage() {
     } else {
       const { error: err } = await supabase
         .from('products')
-        .update({ ...data, updated_at: new Date().toISOString() })
+        .update({ ...payload, updated_at: new Date().toISOString() })
         .eq('id', productId)
       if (err) {
         setError(err.message)
@@ -46,7 +55,7 @@ export function ProductEditPage() {
     return <Navigate to="/admin/panel/urunler" replace />
   }
 
-  if (loading && !isNew) {
+  if (loading) {
     return (
       <div className="flex justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />

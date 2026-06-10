@@ -1,22 +1,29 @@
+import { lazy, Suspense } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { PageSeo } from '@/components/seo/PageSeo'
+import { images } from '@/data/images'
+import { lcpImagePreloadSrc } from '@/lib/image-src'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { Hero } from '@/components/home/Hero'
-import { CategoryShowcase } from '@/components/home/CategoryShowcase'
-import { Services } from '@/components/home/Services'
-import { WhyUs } from '@/components/home/WhyUs'
-import { Stats } from '@/components/home/Stats'
-import { Industries } from '@/components/home/Industries'
-import { FeaturedProducts } from '@/components/home/FeaturedProducts'
-import { CTA } from '@/components/home/CTA'
-import { useProducts } from '@/hooks/useProducts'
+
+const HomeBelowFold = lazy(() =>
+  import('@/components/home/HomeBelowFold').then((m) => ({ default: m.HomeBelowFold })),
+)
 
 export function HomePage() {
-  const { products } = useProducts()
   const { settings } = useSiteData()
   const siteUrl = settings.site_url?.replace(/\/$/, '') ?? ''
 
   return (
     <>
+      <Helmet>
+        <link
+          rel="preload"
+          as="image"
+          href={lcpImagePreloadSrc(images.hero.warehouse)}
+          fetchPriority="high"
+        />
+      </Helmet>
       <PageSeo
         path="/"
         fallbackTitle="Ana Sayfa"
@@ -37,13 +44,9 @@ export function HomePage() {
         }}
       />
       <Hero />
-      <CategoryShowcase />
-      <Services />
-      <WhyUs />
-      <Stats />
-      <Industries />
-      <FeaturedProducts products={products} />
-      <CTA />
+      <Suspense fallback={null}>
+        <HomeBelowFold />
+      </Suspense>
     </>
   )
 }

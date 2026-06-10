@@ -15,7 +15,7 @@ import { stripHtml } from '@/lib/rich-text'
 export function CatalogPage() {
   const { settings } = useSiteData()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { products, categories, loading, usingDemo } = useProducts()
+  const { products, categories, loading } = useProducts()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     searchParams.get('kategori'),
   )
@@ -84,12 +84,6 @@ export function CatalogPage() {
 
       <section className="bg-white py-12 lg:py-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          {usingDemo && (
-            <div className="mb-8 border border-accent-600/15 bg-accent-600/5 px-4 py-2.5 text-xs font-medium text-accent-600">
-              Demo modu — Supabase bağlandığında canlı ürünler gösterilir.
-            </div>
-          )}
-
           <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-16 xl:grid-cols-[240px_1fr]">
             <aside className="hidden lg:block">
               <FadeIn>

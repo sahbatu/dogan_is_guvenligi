@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import type { Category, Product } from '@/lib/supabase'
 import { Input } from '@/components/ui/Input'
 import { RichTextEditor } from '@/components/ui/RichTextEditor'
@@ -7,6 +8,8 @@ import { Button } from '@/components/ui/Button'
 import { MultiImageUpload } from './MultiImageUpload'
 import { normalizeProductImages } from '@/lib/product-images'
 import { SeoFieldsForm, seoFromEntity, type SeoFormValues } from './SeoFieldsForm'
+import { resolveCategoryId } from '@/lib/product-payload'
+import { parseStockInput } from '@/lib/stock'
 import { slugify } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 
@@ -14,10 +17,11 @@ export interface ProductFormData {
   name: string
   slug: string
   description: string
-  category_id: string
+  category_id: string | null
   image_url: string | null
   image_urls: string[]
   price: number | null
+  stock: number | null
   is_active: boolean
   sort_order: number
   meta_title: string | null
@@ -49,10 +53,12 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
     initial ? normalizeProductImages(initial) : [],
   )
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : '')
+  const [stock, setStock] = useState(initial?.stock != null ? String(initial.stock) : '')
   const [isActive, setIsActive] = useState(initial?.is_active ?? true)
   const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? 0)
   const [autoSlug, setAutoSlug] = useState(!initial)
   const [saving, setSaving] = useState(false)
+  const [formError, setFormError] = useState<string | null>(null)
   const [seo, setSeo] = useState<SeoFormValues>(() =>
     seoFromEntity(initial, {
       title: initial?.name,
@@ -65,17 +71,37 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
     if (autoSlug && name) setSlug(slugify(name))
   }, [name, autoSlug])
 
+  useEffect(() => {
+    if (!categories.length) return
+    const resolved = resolveCategoryId(categoryId, categories)
+    if (resolved && resolved !== categoryId) {
+      setCategoryId(resolved)
+    }
+  }, [categories, categoryId])
+
+  const selectedCategoryId =
+    resolveCategoryId(categoryId, categories) ?? ''
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setFormError(null)
+
+    const resolvedCategoryId = resolveCategoryId(categoryId, categories)
+    if (!resolvedCategoryId) {
+      setFormError('Lütfen bir kategori seçin.')
+      return
+    }
+
     setSaving(true)
     await onSubmit({
       name,
       slug,
       description,
-      category_id: categoryId,
+      category_id: resolvedCategoryId,
       image_url: imageUrls[0] ?? null,
       image_urls: imageUrls,
       price: price.trim() ? Number(price) : null,
+      stock: parseStockInput(stock),
       is_active: isActive,
       sort_order: sortOrder,
       meta_title: seo.meta_title || null,
@@ -94,6 +120,9 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
+      {formError && (
+        <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">{formError}</div>
+      )}
       <div className="flex gap-2 border-b border-navy-900/10 pb-2">
         {(['content', 'seo'] as const).map((t) => (
           <button
@@ -135,19 +164,43 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
           />
           <div className="space-y-2">
             <label className="block text-sm font-medium text-navy-900">Kategori</label>
-            <select
-              value={categoryId}
-              onChange={(e) => setCategoryId(e.target.value)}
-              className="w-full rounded-xl border border-navy-900/10 bg-white px-4 py-3 text-navy-950"
-              required
-            >
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
+            {categories.length === 0 ? (
+              <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800">
+                Ürün eklemek için önce{' '}
+                <Link to="/admin/panel/kategoriler" className="font-semibold underline">
+                  kategori oluşturun
+                </Link>
+                .
+              </p>
+            ) : (
+              <select
+                value={selectedCategoryId}
+                onChange={(e) => setCategoryId(e.target.value)}
+                className="w-full rounded-xl border border-navy-900/10 bg-white px-4 py-3 text-navy-950"
+                required
+              >
+                {categories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           <MultiImageUpload value={imageUrls} onChange={setImageUrls} />
-          <Input label="Fiyat (₺)" type="number" min={0} step={0.01} value={price} onChange={(e) => setPrice(e.target.value)} />
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input label="Fiyat (₺)" type="number" min={0} step={0.01} value={price} onChange={(e) => setPrice(e.target.value)} />
+            <div>
+              <Input
+                label="Stok (adet)"
+                type="number"
+                min={0}
+                step={1}
+                value={stock}
+                onChange={(e) => setStock(e.target.value)}
+                placeholder="Opsiyonel"
+              />
+              <p className="mt-1 text-xs text-muted">Boş bırakılırsa stok takibi yapılmaz.</p>
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-4">
             <Input label="Sıralama" type="number" value={sortOrder} onChange={(e) => setSortOrder(Number(e.target.value))} />
             <div className="flex items-end pb-3">
@@ -164,7 +217,9 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
 
       <div className="flex justify-end gap-3 pt-2">
         <Button type="button" variant="ghost" onClick={onCancel}>İptal</Button>
-        <Button type="submit" disabled={saving}>{saving ? 'Kaydediliyor...' : initial ? 'Güncelle' : 'Ekle'}</Button>
+        <Button type="submit" disabled={saving || categories.length === 0}>
+          {saving ? 'Kaydediliyor...' : initial ? 'Güncelle' : 'Ekle'}
+        </Button>
       </div>
     </form>
   )

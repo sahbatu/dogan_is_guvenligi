@@ -3,6 +3,7 @@ import { images } from '@/data/images'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { Counter } from '@/components/ui/Counter'
 import { FadeIn } from '@/components/ui/FadeIn'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 export function Stats() {
   const { getSection } = useSiteData()
@@ -13,9 +14,11 @@ export function Stats() {
 
   return (
     <section className="relative overflow-hidden">
-      <img
+      <OptimizedImage
         src={images.stats}
         alt=""
+        width={1280}
+        height={400}
         className="absolute inset-0 h-full w-full object-cover"
         aria-hidden
       />

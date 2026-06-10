@@ -1,5 +1,8 @@
 import { writeFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import { loadEnvFiles } from './load-env'
+
+loadEnvFiles()
 
 const siteUrl = (process.env.VITE_SITE_URL ?? 'https://www.doganisguvenligi.com').replace(/\/$/, '')
 
@@ -56,8 +59,8 @@ async function main() {
     { loc: '/cerez-politikasi', lastmod: buildDate, changefreq: 'yearly', priority: '0.4' },
   ]
 
-  const supabaseUrl = process.env.VITE_SUPABASE_URL
-  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY
+  const supabaseUrl = process.env.VITE_SUPABASE_REMOTE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim()
+  const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY?.trim()
 
   if (supabaseUrl && supabaseKey) {
     try {

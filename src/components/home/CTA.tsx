@@ -4,6 +4,8 @@ import { images } from '@/data/images'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { Button } from '@/components/ui/Button'
 import { FadeIn } from '@/components/ui/FadeIn'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
+import { resolveStoragePublicUrl } from '@/lib/storage-url'
 
 export function CTA() {
   const { getSection } = useSiteData()
@@ -44,9 +46,11 @@ export function CTA() {
                 </div>
               </div>
               <div className="relative min-h-[240px] lg:min-h-full">
-                <img
-                  src={section.image ?? images.cta}
+                <OptimizedImage
+                  src={resolveStoragePublicUrl(section.image as string) ?? images.cta}
                   alt="Depo ve lojistik"
+                  width={800}
+                  height={480}
                   className="absolute inset-0 h-full w-full object-cover"
                 />
                 <div className="photo-overlay absolute inset-0 lg:bg-gradient-to-r lg:from-white lg:via-transparent lg:to-transparent" />

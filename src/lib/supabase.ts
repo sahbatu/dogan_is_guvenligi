@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { BlogPostRow, ContactSubmission, PageSection, PageSeo, SiteSettings } from '@/types/cms'
 import type { SeoFields } from '@/types/seo'
+import { getRemoteSupabaseUrl, resolveSupabaseClientUrl } from '@/lib/storage-url'
 
 export interface Category {
   id: string
@@ -17,6 +18,7 @@ export interface Product extends SeoFields {
   image_url: string | null
   image_urls: string[]
   price: number | null
+  stock: number | null
   is_active: boolean
   sort_order: number
   created_at: string
@@ -32,6 +34,7 @@ export type ProductInsert = {
   image_url?: string | null
   image_urls?: string[]
   price?: number | null
+  stock?: number | null
   is_active?: boolean
   sort_order?: number
 } & Partial<SeoFields>
@@ -40,8 +43,8 @@ export type ProductUpdate = Partial<ProductInsert> & { updated_at?: string }
 
 export type { SiteSettings, PageSection, PageSeo, BlogPostRow, ContactSubmission }
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL?.trim()
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim()
+const supabaseClientUrl = resolveSupabaseClientUrl()
 
 const PLACEHOLDER_MARKERS = [
   'your-project',
@@ -57,7 +60,7 @@ function isRealSupabaseConfig(url?: string, key?: string): boolean {
   return !PLACEHOLDER_MARKERS.some((marker) => combined.includes(marker))
 }
 
-export const isSupabaseConfigured = isRealSupabaseConfig(supabaseUrl, supabaseAnonKey)
+export const isSupabaseConfigured = isRealSupabaseConfig(getRemoteSupabaseUrl(), supabaseAnonKey)
 
 /** Ağ hatası / timeout durumunda demo veriye hızlı düşmek için */
 export async function withFetchTimeout<T>(promise: PromiseLike<T>, ms = 4000): Promise<T> {
@@ -79,7 +82,7 @@ let supabaseInstance: SupabaseClient | null = null
 export function getSupabase(): SupabaseClient | null {
   if (!isSupabaseConfigured) return null
   if (!supabaseInstance) {
-    supabaseInstance = createClient(supabaseUrl!, supabaseAnonKey!)
+    supabaseInstance = createClient(supabaseClientUrl!, supabaseAnonKey!)
   }
   return supabaseInstance
 }

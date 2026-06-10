@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
 import { ArrowRight, Award, Clock, ShieldCheck } from 'lucide-react'
 import { images } from '@/data/images'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { Button } from '@/components/ui/Button'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 const trustIcons = [ShieldCheck, Clock, Award]
 
@@ -43,11 +43,7 @@ export function Hero() {
 
       <div className="relative mx-auto max-w-7xl px-6 pb-0 pt-28 lg:px-8 lg:pt-32">
         <div className="grid items-center gap-12 lg:grid-cols-2 lg:gap-16">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
+          <div>
             <p className="mb-4 text-sm font-semibold uppercase tracking-[0.2em] text-accent-600">
               {section.badge ?? 'Kurumsal tedarik'}
             </p>
@@ -80,29 +76,32 @@ export function Hero() {
                 </div>
               ))}
             </div>
-          </motion.div>
+          </div>
 
           <div className="mx-auto w-full max-w-xl lg:max-w-none lg:mx-0">
             <div className="grid h-[280px] grid-cols-2 grid-rows-2 gap-3 sm:h-[360px] sm:gap-4 lg:h-[400px]">
               {collage.map((item, i) => (
-                <motion.div
+                <div
                   key={item.id}
-                  initial={{ opacity: 0, x: 24 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.5, delay: 0.15 + i * 0.1 }}
                   className={`h-full min-h-0 ${item.span}`}
                   style={{ rotate: `${item.rotate}deg` }}
                 >
                   <div className="relative h-full overflow-hidden rounded-lg border border-navy-900/10 shadow-lg shadow-navy-900/10">
-                    <img
+                    <OptimizedImage
                       src={item.src}
                       alt={item.alt}
-                      loading={i === 0 ? 'eager' : 'lazy'}
-                      decoding="async"
+                      priority={i === 0}
+                      sizes={
+                        i === 0
+                          ? '(max-width: 640px) 50vw, (max-width: 1024px) 45vw, 400px'
+                          : '(max-width: 640px) 45vw, 240px'
+                      }
+                      width={640}
+                      height={480}
                       className="absolute inset-0 h-full w-full object-cover"
                     />
                   </div>
-                </motion.div>
+                </div>
               ))}
             </div>
           </div>

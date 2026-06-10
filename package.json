@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "prebuild": "tsx scripts/generate-prerender-routes.ts && tsx scripts/generate-sitemap.ts",
+    "optimize:images": "tsx scripts/optimize-images.ts",
+    "prebuild": "tsx scripts/copy-fonts.ts && tsx scripts/optimize-images.ts && tsx scripts/generate-prerender-routes.ts && tsx scripts/generate-sitemap.ts",
     "build": "tsc -b && vite build",
     "postbuild": "tsx scripts/prerender.ts",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "vite preview"
   },
   "dependencies": {
+    "@fontsource/inter": "^5.2.8",
+    "@fontsource/plus-jakarta-sans": "^5.2.8",
     "@supabase/supabase-js": "^2.49.8",
     "@tiptap/extension-link": "^3.26.0",
     "@tiptap/extension-placeholder": "^3.26.0",
@@ -40,6 +44,7 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.19",
     "globals": "^16.0.0",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.8",
     "tsx": "^4.22.4",
     "typescript": "~5.8.3",

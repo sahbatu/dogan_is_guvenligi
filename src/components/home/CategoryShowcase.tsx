@@ -3,6 +3,8 @@ import { ArrowRight, Sparkles, Shield } from 'lucide-react'
 import { images } from '@/data/images'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { FadeIn } from '@/components/ui/FadeIn'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
+import { resolveStoragePublicUrl } from '@/lib/storage-url'
 
 const defaultCategories = [
   {
@@ -64,9 +66,11 @@ export function CategoryShowcase() {
                   to={`/e-katalog?kategori=${cat.slug}`}
                   className="group relative flex min-h-[280px] overflow-hidden rounded-2xl shadow-md transition-shadow hover:shadow-xl"
                 >
-                  <img
-                    src={cat.image}
+                  <OptimizedImage
+                    src={resolveStoragePublicUrl(cat.image) ?? cat.image}
                     alt={cat.title}
+                    width={640}
+                    height={280}
                     className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                   <div className="photo-overlay absolute inset-0" />

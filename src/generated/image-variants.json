@@ -1,0 +1,197 @@
+{
+  "/favicon.png": {
+    "widths": [],
+    "fullWidth": 32
+  },
+  "/images/about-team.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/images/banner-about.jpg": {
+    "widths": [
+      400,
+      480,
+      640,
+      720,
+      960
+    ],
+    "fullWidth": 1200
+  },
+  "/images/banner-catalog.jpg": {
+    "widths": [
+      400,
+      480,
+      640,
+      720,
+      960
+    ],
+    "fullWidth": 1200
+  },
+  "/images/banner-contact.jpg": {
+    "widths": [
+      400,
+      480,
+      640,
+      720,
+      960
+    ],
+    "fullWidth": 1200
+  },
+  "/images/cta-warehouse.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/images/hero-ppe.jpg": {
+    "widths": [
+      400,
+      480,
+      640,
+      720,
+      960
+    ],
+    "fullWidth": 1200
+  },
+  "/images/hero-warehouse.jpg": {
+    "widths": [
+      400,
+      480,
+      640,
+      720,
+      960
+    ],
+    "fullWidth": 1200
+  },
+  "/images/products/disinfectant.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/floor-mop.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/helmet.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/hi-vis-vest.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/safety-boots.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/surface-cleaner.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/window-set.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/products/work-gloves.jpg": {
+    "widths": [
+      320,
+      400,
+      600
+    ],
+    "fullWidth": 800
+  },
+  "/images/service-cleaning.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/images/service-consulting.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 900
+  },
+  "/images/service-safety.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/images/service-supply.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 900
+  },
+  "/images/stats-bg.jpg": {
+    "widths": [
+      320,
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/logo.png": {
+    "widths": [
+      200,
+      320
+    ],
+    "fullWidth": 520
+  }
+}

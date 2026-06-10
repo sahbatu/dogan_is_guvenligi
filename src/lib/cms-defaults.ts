@@ -1,6 +1,5 @@
 import {
   aboutContent,
-  blogPosts,
   company,
   industries,
   navLinks,
@@ -9,7 +8,7 @@ import {
   whyUsPoints,
 } from '@/data/placeholder'
 import { images } from '@/data/images'
-import type { BlogPostRow, NavLink, PageSection, SiteSettings } from '@/types/cms'
+import type { NavLink, PageSection, SiteSettings } from '@/types/cms'
 
 export function getDefaultSiteSettings(): SiteSettings {
   return {
@@ -156,33 +155,4 @@ export function getDefaultPageSections(): PageSection[] {
       updated_at: new Date().toISOString(),
     },
   ]
-}
-
-export function getDefaultBlogPosts(): BlogPostRow[] {
-  return blogPosts.map((p, i) => ({
-    id: `demo-blog-${i}`,
-    slug: p.slug,
-    title: p.title,
-    excerpt: p.excerpt,
-    content: p.content,
-    image_url: p.image,
-    image_urls: p.image ? [p.image] : [],
-    category: p.category,
-    published_at: p.publishedAt,
-    read_time: p.readTime,
-    is_published: true,
-    meta_title: p.title,
-    meta_description: p.excerpt,
-    meta_robots: 'index,follow',
-    canonical_path: null,
-    og_title: null,
-    og_description: null,
-    og_image_url: p.image,
-    og_type: 'article',
-    twitter_card: 'summary_large_image',
-    focus_keyword: null,
-    schema_json: null,
-    created_at: p.publishedAt,
-    updated_at: p.publishedAt,
-  }))
 }

@@ -5,6 +5,7 @@ import { useProducts } from '@/hooks/useProducts'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { Product } from '@/lib/supabase'
 import { formatPrice } from '@/lib/utils'
+import { formatStock } from '@/lib/stock'
 import { Button } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 
@@ -78,6 +79,7 @@ export function DashboardPage() {
                 <th className="px-6 py-4 font-semibold text-navy-900">Ürün</th>
                 <th className="px-6 py-4 font-semibold text-navy-900">Kategori</th>
                 <th className="px-6 py-4 font-semibold text-navy-900">Fiyat</th>
+                <th className="px-6 py-4 font-semibold text-navy-900">Stok</th>
                 <th className="px-6 py-4 font-semibold text-navy-900">Durum</th>
                 <th className="px-6 py-4 font-semibold text-navy-900">İşlemler</th>
               </tr>
@@ -107,6 +109,9 @@ export function DashboardPage() {
                   </td>
                   <td className="px-6 py-4 font-medium tabular-nums text-navy-900">
                     {formatPrice(product.price) ?? '—'}
+                  </td>
+                  <td className="px-6 py-4 tabular-nums text-muted">
+                    {formatStock(product.stock) ?? '—'}
                   </td>
                   <td className="px-6 py-4">
                     <span

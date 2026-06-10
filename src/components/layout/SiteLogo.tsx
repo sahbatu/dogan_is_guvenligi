@@ -1,4 +1,6 @@
 import { cn } from '@/lib/utils'
+import { logoSrcSet } from '@/lib/image-src'
+import { resolveStoragePublicUrl } from '@/lib/storage-url'
 import type { SiteSettings } from '@/types/cms'
 
 interface SiteLogoProps {
@@ -16,14 +18,35 @@ export function SiteLogo({
 }: SiteLogoProps) {
   const subtitle = settings.logo_subtitle || 'İş Güvenliği'
   const isLight = variant === 'light'
-  const hasLogoImage = !!settings.logo_url
+  const logoUrl = resolveStoragePublicUrl(settings.logo_url)
+  const hasLogoImage = !!logoUrl
+  const isLocalPng = !!logoUrl && logoUrl.startsWith('/') && /\.png$/i.test(logoUrl)
 
   return (
     <div className={cn('flex items-center gap-2.5', className)}>
-      {hasLogoImage ? (
+      {hasLogoImage && isLocalPng ? (
+        <picture>
+          <source srcSet={logoSrcSet()} sizes="(max-width: 640px) 220px, 260px" type="image/webp" />
+          <img
+            src={logoUrl}
+            alt={settings.company_name}
+            width={260}
+            height={44}
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
+            className="h-10 w-auto max-w-[220px] object-contain object-left sm:h-11 sm:max-w-[260px]"
+          />
+        </picture>
+      ) : hasLogoImage ? (
         <img
-          src={settings.logo_url!}
+          src={logoUrl}
           alt={settings.company_name}
+          width={260}
+          height={44}
+          loading="eager"
+          decoding="async"
+          fetchPriority="high"
           className="h-10 w-auto max-w-[220px] object-contain object-left sm:h-11 sm:max-w-[260px]"
         />
       ) : (

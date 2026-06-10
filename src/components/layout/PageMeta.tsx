@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { images } from '@/data/images'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 interface PageMetaProps {
   title: string
@@ -38,7 +39,15 @@ export function PageHeader({ title, subtitle, children, banner }: PageHeaderProp
 
   return (
     <section className="relative overflow-hidden pb-16 pt-28 lg:pb-20 lg:pt-32">
-      <img src={bg} alt="" className="absolute inset-0 h-full w-full object-cover" aria-hidden />
+      <OptimizedImage
+        src={bg}
+        alt=""
+        width={1280}
+        height={320}
+        priority
+        className="absolute inset-0 h-full w-full object-cover"
+        aria-hidden
+      />
       <div className="absolute inset-0 bg-navy-900/75" />
       <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
         <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-400">

@@ -3,6 +3,7 @@ import { services as defaultServices } from '@/data/placeholder'
 import { images } from '@/data/images'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { FadeIn } from '@/components/ui/FadeIn'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 const icons = { Sparkles, Shield, Building2, Headphones } as const
 
@@ -92,11 +93,20 @@ function ServicePhotoCard({
         large ? 'min-h-[320px] lg:min-h-[420px]' : horizontal ? 'min-h-[200px] lg:min-h-[220px]' : 'min-h-[200px]'
       } ${horizontal ? 'lg:flex' : ''}`}
     >
-      <img
+      <OptimizedImage
         src={image}
         alt={service.title}
+        width={800}
+        height={large ? 420 : horizontal ? 220 : 200}
+        sizes={
+          large
+            ? '(max-width: 1024px) 100vw, 58vw'
+            : horizontal
+              ? '(max-width: 1024px) 100vw, 50vw'
+              : '(max-width: 1024px) 50vw, 42vw'
+        }
         className={`absolute inset-0 h-full w-full object-cover transition-transform duration-400 group-hover:scale-105 ${
-          horizontal ? 'lg:w-1/2 lg:object-cover' : ''
+          horizontal ? 'lg:left-0 lg:w-1/2 lg:object-cover' : ''
         }`}
       />
       <div className="photo-overlay absolute inset-0" />

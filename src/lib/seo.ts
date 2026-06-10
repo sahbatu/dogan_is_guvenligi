@@ -1,5 +1,6 @@
 import type { ResolvedSeo, SeoFields } from '@/types/seo'
 import type { SiteSettings } from '@/types/cms'
+import { resolveStoragePublicUrl } from '@/lib/storage-url'
 
 function absUrl(base: string | null | undefined, path: string): string {
   const site = (base ?? import.meta.env.VITE_SITE_URL ?? '').replace(/\/$/, '')
@@ -38,10 +39,10 @@ export function resolveSeo(opts: {
   const canonicalUrl = absUrl(settings.site_url, canonicalPath)
 
   const ogImage =
-    entity?.og_image_url ??
-    pageSeo?.og_image_url ??
-    fallbackImage ??
-    settings.default_og_image_url ??
+    resolveStoragePublicUrl(entity?.og_image_url) ??
+    resolveStoragePublicUrl(pageSeo?.og_image_url) ??
+    resolveStoragePublicUrl(fallbackImage) ??
+    resolveStoragePublicUrl(settings.default_og_image_url) ??
     ''
 
   const ogImageAbs = ogImage.startsWith('http') ? ogImage : absUrl(settings.site_url, ogImage)

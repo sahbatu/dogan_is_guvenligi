@@ -5,6 +5,7 @@ import { aboutContent } from '@/data/placeholder'
 import { images } from '@/data/images'
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/ui/FadeIn'
 import { Card } from '@/components/ui/Card'
+import { OptimizedImage } from '@/components/ui/OptimizedImage'
 
 interface AboutData {
   intro?: string
@@ -45,7 +46,13 @@ export function AboutPage() {
             </FadeIn>
             <FadeIn delay={0.1} className="lg:col-span-2">
               <div className="relative aspect-[4/5] overflow-hidden rounded-xl">
-                <img src={images.about} alt="Saha ve iş güvenliği" className="h-full w-full object-cover" />
+                <OptimizedImage
+                  src={images.about}
+                  alt="Saha ve iş güvenliği"
+                  width={640}
+                  height={800}
+                  className="h-full w-full object-cover"
+                />
                 <div className="photo-overlay absolute inset-0 flex flex-col justify-end p-8">
                   <p className="text-sm font-medium uppercase tracking-widest text-accent-400">
                     {settings.founded}&apos;den beri

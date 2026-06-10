@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react'
-import { getDefaultBlogPosts } from '@/lib/cms-defaults'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { BlogPostRow } from '@/types/cms'
 import { withSyncedGalleryImages } from '@/lib/gallery-images'
@@ -12,37 +11,35 @@ function mapBlog(row: Record<string, unknown>): BlogPostRow {
   } as BlogPostRow)
 }
 
-function getDemoPosts(includeDrafts?: boolean) {
-  const demo = getDefaultBlogPosts()
-  return includeDrafts ? demo : demo.filter((p) => p.is_published)
-}
-
 export function useBlogPosts(options?: { includeDrafts?: boolean }) {
-  const [posts, setPosts] = useState<BlogPostRow[]>(() =>
-    isSupabaseConfigured ? [] : getDemoPosts(options?.includeDrafts),
-  )
+  const [posts, setPosts] = useState<BlogPostRow[]>([])
   const [loading, setLoading] = useState(isSupabaseConfigured)
-  const [usingDemo, setUsingDemo] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const fetchPosts = useCallback(async () => {
     setLoading(true)
+    setError(null)
+
     if (!isSupabaseConfigured) {
-      setPosts(getDemoPosts(options?.includeDrafts))
-      setUsingDemo(true)
+      setPosts([])
       setLoading(false)
       return
     }
+
     const supabase = getSupabase()!
-    let query = supabase.from('blog_posts').select('*').order('published_at', { ascending: false })
+    let query = supabase
+      .from('blog_posts')
+      .select('*')
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .order('created_at', { ascending: false })
     if (!options?.includeDrafts) query = query.eq('is_published', true)
-    const { data, error } = await query
-    if (error || !data?.length) {
-      const demo = getDefaultBlogPosts()
-      setPosts(options?.includeDrafts ? demo : demo.filter((p) => p.is_published))
-      setUsingDemo(true)
+
+    const { data, error: fetchError } = await query
+    if (fetchError) {
+      setError(fetchError.message)
+      setPosts([])
     } else {
-      setPosts(data.map(mapBlog))
-      setUsingDemo(false)
+      setPosts((data ?? []).map(mapBlog))
     }
     setLoading(false)
   }, [options?.includeDrafts])
@@ -51,7 +48,13 @@ export function useBlogPosts(options?: { includeDrafts?: boolean }) {
     fetchPosts()
   }, [fetchPosts])
 
-  return { posts, loading, usingDemo, refetch: fetchPosts }
+  return {
+    posts,
+    loading,
+    error,
+    usingDemo: !isSupabaseConfigured,
+    refetch: fetchPosts,
+  }
 }
 
 export function useBlogPost(slug: string) {
@@ -61,11 +64,14 @@ export function useBlogPost(slug: string) {
   useEffect(() => {
     async function load() {
       if (!slug) return
+
       if (!isSupabaseConfigured) {
-        setPost(getDefaultBlogPosts().find((p) => p.slug === slug) ?? null)
+        setPost(null)
         setLoading(false)
         return
       }
+
+      setLoading(true)
       const supabase = getSupabase()!
       const { data, error } = await supabase
         .from('blog_posts')
@@ -73,8 +79,9 @@ export function useBlogPost(slug: string) {
         .eq('slug', slug)
         .eq('is_published', true)
         .maybeSingle()
+
       if (error || !data) {
-        setPost(getDefaultBlogPosts().find((p) => p.slug === slug) ?? null)
+        setPost(null)
       } else {
         setPost(mapBlog(data))
       }

@@ -35,6 +35,8 @@ export function BlogPage() {
             <div className="flex justify-center py-16">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-accent-600 border-t-transparent" />
             </div>
+          ) : posts.length === 0 ? (
+            <p className="py-16 text-center text-muted">Henüz blog yazısı yayınlanmadı.</p>
           ) : (
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 lg:gap-5">
               {posts.map((post, i) => (

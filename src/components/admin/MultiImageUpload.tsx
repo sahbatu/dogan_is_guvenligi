@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, ImageIcon, Upload, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import { buildWebpStoragePath, convertImageToWebP } from '@/lib/image-webp'
+import { buildStoragePublicUrl } from '@/lib/storage-url'
 import { MAX_GALLERY_IMAGES } from '@/lib/gallery-images'
 
 type StorageBucket = 'product-images' | 'site-images'
@@ -45,8 +46,7 @@ export function MultiImageUpload({
 
     if (uploadError) throw new Error(uploadError.message)
 
-    const { data } = supabase.storage.from(bucket).getPublicUrl(path)
-    return data.publicUrl
+    return buildStoragePublicUrl(bucket, path)
   }
 
   const handleFiles = async (e: ChangeEvent<HTMLInputElement>) => {

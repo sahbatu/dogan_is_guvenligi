@@ -1,12 +1,14 @@
 import { writeFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
+import { loadEnvFiles } from './load-env'
 
 const staticRoutes = ['/', '/hakkimizda', '/e-katalog', '/blog', '/iletisim', '/kvkk', '/cerez-politikasi']
 
 async function main() {
+  loadEnvFiles()
   const routes = [...staticRoutes]
-  const url = process.env.VITE_SUPABASE_URL
-  const key = process.env.VITE_SUPABASE_ANON_KEY
+  const url = process.env.VITE_SUPABASE_REMOTE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim()
+  const key = process.env.VITE_SUPABASE_ANON_KEY?.trim()
 
   if (url && key) {
     try {

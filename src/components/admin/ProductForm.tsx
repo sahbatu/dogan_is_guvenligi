@@ -22,6 +22,7 @@ export interface ProductFormData {
   image_urls: string[]
   price: number | null
   stock: number | null
+  sku: string | null
   is_active: boolean
   sort_order: number
   meta_title: string | null
@@ -54,6 +55,7 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
   )
   const [price, setPrice] = useState(initial?.price != null ? String(initial.price) : '')
   const [stock, setStock] = useState(initial?.stock != null ? String(initial.stock) : '')
+  const [sku, setSku] = useState(initial?.sku ?? '')
   const [isActive, setIsActive] = useState(initial?.is_active ?? true)
   const [sortOrder, setSortOrder] = useState(initial?.sort_order ?? 0)
   const [autoSlug, setAutoSlug] = useState(!initial)
@@ -102,6 +104,7 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
       image_urls: imageUrls,
       price: price.trim() ? Number(price) : null,
       stock: parseStockInput(stock),
+      sku: sku.trim() || null,
       is_active: isActive,
       sort_order: sortOrder,
       meta_title: seo.meta_title || null,
@@ -186,6 +189,15 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
             )}
           </div>
           <MultiImageUpload value={imageUrls} onChange={setImageUrls} />
+          <div>
+            <Input
+              label="Stok Kodu"
+              value={sku}
+              onChange={(e) => setSku(e.target.value)}
+              placeholder="Örn. IG-1001"
+            />
+            <p className="mt-1 text-xs text-muted">Opsiyonel. Ürün detay sayfasında görüntülenir.</p>
+          </div>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input label="Fiyat (₺)" type="number" min={0} step={0.01} value={price} onChange={(e) => setPrice(e.target.value)} />
             <div>

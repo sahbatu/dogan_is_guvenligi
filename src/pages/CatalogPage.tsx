@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageMeta'
 import { PageSeo } from '@/components/seo/PageSeo'
 import { useSiteData } from '@/contexts/SiteDataContext'
@@ -11,6 +12,8 @@ import { FadeIn } from '@/components/ui/FadeIn'
 import { images } from '@/data/images'
 import { cn } from '@/lib/utils'
 import { stripHtml } from '@/lib/rich-text'
+
+const PAGE_SIZE = 20
 
 export function CatalogPage() {
   const { settings } = useSiteData()
@@ -35,6 +38,15 @@ export function CatalogPage() {
     }
   }
 
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      next.delete('sayfa')
+      return next
+    })
+  }
+
   const filtered = useMemo(() => {
     let result = products
     if (selectedCategory) {
@@ -52,6 +64,28 @@ export function CatalogPage() {
     }
     return result
   }, [products, selectedCategory, search])
+
+  const pageParam = Number(searchParams.get('sayfa') ?? '1')
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
+  const currentPage = Math.min(Math.max(1, Number.isFinite(pageParam) ? pageParam : 1), totalPages)
+
+  const pagedProducts = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE
+    return filtered.slice(start, start + PAGE_SIZE)
+  }, [filtered, currentPage])
+
+  const goToPage = (page: number) => {
+    const target = Math.min(Math.max(1, page), totalPages)
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (target <= 1) next.delete('sayfa')
+      else next.set('sayfa', String(target))
+      return next
+    })
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }
 
   const activeCategoryName =
     categories.find((c) => c.slug === selectedCategory)?.name ?? 'Tüm Ürünler'
@@ -76,7 +110,7 @@ export function CatalogPage() {
           <CatalogSearch
             variant="hero"
             value={search}
-            onChange={setSearch}
+            onChange={handleSearchChange}
             placeholder="Ürün adı ile arayın..."
           />
         </div>
@@ -117,7 +151,7 @@ export function CatalogPage() {
 
             <div>
               <FadeIn className="mb-8 space-y-5 lg:hidden">
-                <CatalogSearch value={search} onChange={setSearch} />
+                <CatalogSearch value={search} onChange={handleSearchChange} />
                 <CategoryFilter
                   categories={categories}
                   selected={selectedCategory}
@@ -137,7 +171,7 @@ export function CatalogPage() {
                 {search && (
                   <button
                     type="button"
-                    onClick={() => setSearch('')}
+                    onClick={() => handleSearchChange('')}
                     className="text-xs font-semibold uppercase tracking-wider text-accent-600 hover:text-accent-500"
                   >
                     Aramayı temizle
@@ -160,7 +194,43 @@ export function CatalogPage() {
                   ))}
                 </div>
               ) : (
-                <ProductGrid products={filtered} searchQuery={search} />
+                <>
+                  <ProductGrid products={pagedProducts} searchQuery={search} />
+                  {totalPages > 1 && (
+                    <FadeIn className="mt-10 flex flex-col items-center justify-between gap-4 border-t border-navy-900/8 pt-6 sm:flex-row">
+                      <p className="text-xs text-muted tabular-nums">
+                        {(currentPage - 1) * PAGE_SIZE + 1}–
+                        {Math.min(currentPage * PAGE_SIZE, filtered.length)} arası ·{' '}
+                        toplam {filtered.length} ürün
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => goToPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label="Önceki sayfa"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          Önceki
+                        </button>
+                        <span className="text-xs text-muted tabular-nums">
+                          Sayfa {currentPage} / {totalPages}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => goToPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
+                          aria-label="Sonraki sayfa"
+                        >
+                          Sonraki
+                          <ChevronRight className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </FadeIn>
+                  )}
+                </>
               )}
             </div>
           </div>

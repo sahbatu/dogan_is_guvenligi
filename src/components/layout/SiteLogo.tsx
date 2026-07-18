@@ -26,28 +26,28 @@ export function SiteLogo({
     <div className={cn('flex items-center gap-2.5', className)}>
       {hasLogoImage && isLocalPng ? (
         <picture>
-          <source srcSet={logoSrcSet()} sizes="(max-width: 640px) 220px, 260px" type="image/webp" />
+          <source srcSet={logoSrcSet()} sizes="(max-width: 640px) 320px, 380px" type="image/webp" />
           <img
             src={logoUrl}
             alt={settings.company_name}
-            width={260}
-            height={44}
+            width={380}
+            height={64}
             loading="eager"
             decoding="async"
             fetchPriority="high"
-            className="h-10 w-auto max-w-[220px] object-contain object-left sm:h-11 sm:max-w-[260px]"
+            className="h-14 w-auto max-w-[320px] object-contain object-left sm:h-16 sm:max-w-[380px]"
           />
         </picture>
       ) : hasLogoImage ? (
         <img
           src={logoUrl}
           alt={settings.company_name}
-          width={260}
-          height={44}
+          width={380}
+          height={64}
           loading="eager"
           decoding="async"
           fetchPriority="high"
-          className="h-10 w-auto max-w-[220px] object-contain object-left sm:h-11 sm:max-w-[260px]"
+          className="h-14 w-auto max-w-[320px] object-contain object-left sm:h-16 sm:max-w-[380px]"
         />
       ) : (
         <div

@@ -24,6 +24,7 @@ export function buildProductPayload(data: ProductFormData, categoryId: string) {
     image_urls: data.image_urls,
     price: data.price,
     stock: data.stock,
+    sku: emptyToNull(data.sku),
     is_active: data.is_active,
     sort_order: data.sort_order,
     meta_title: emptyToNull(data.meta_title),

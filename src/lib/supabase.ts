@@ -19,6 +19,7 @@ export interface Product extends SeoFields {
   image_urls: string[]
   price: number | null
   stock: number | null
+  sku: string | null
   is_active: boolean
   sort_order: number
   created_at: string
@@ -35,6 +36,7 @@ export type ProductInsert = {
   image_urls?: string[]
   price?: number | null
   stock?: number | null
+  sku?: string | null
   is_active?: boolean
   sort_order?: number
 } & Partial<SeoFields>

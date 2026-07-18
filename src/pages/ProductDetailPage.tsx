@@ -215,6 +215,13 @@ export function ProductDetailPage() {
 
                 <ProductStockBadge stock={product.stock} className="mt-3" />
 
+                {product.sku && (
+                  <p className="mt-3 text-xs text-muted">
+                    <span className="font-semibold text-navy-900">Stok Kodu:</span>{' '}
+                    <span className="tabular-nums">{product.sku}</span>
+                  </p>
+                )}
+
               </div>
 
 

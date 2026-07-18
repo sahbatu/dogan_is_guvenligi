@@ -5,13 +5,15 @@ import { LEGAL_PATHS } from '@/lib/legal-defaults'
 import { PageHeader } from '@/components/layout/PageMeta'
 import { PageSeo } from '@/components/seo/PageSeo'
 import { useSiteData } from '@/contexts/SiteDataContext'
-import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
+import { isSupabaseConfigured } from '@/lib/supabase'
+import { resolveSupabaseClientUrl } from '@/lib/storage-url'
 import { images } from '@/data/images'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { Card } from '@/components/ui/Card'
 import { Input } from '@/components/ui/Input'
 import { Textarea } from '@/components/ui/Textarea'
 import { Button } from '@/components/ui/Button'
+import { TurnstileWidget } from '@/components/ui/TurnstileWidget'
 import {
   CONTACT_LIMITS,
   isContactRateLimited,
@@ -19,6 +21,23 @@ import {
   normalizeContactPhone,
   validateContactForm,
 } from '@/lib/contact-form'
+
+const TURNSTILE_SITE_KEY =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY ??
+  import.meta.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ??
+  ''
+
+const CONTACT_ERROR_MESSAGES: Record<string, string> = {
+  kvkk_required: 'Devam etmek için KVKK aydınlatma metnini kabul etmelisiniz.',
+  invalid_name: 'Ad Soyad geçersiz.',
+  invalid_email: 'E-posta adresi geçersiz.',
+  invalid_message: 'Mesaj çok kısa veya çok uzun.',
+  invalid_phone: 'Telefon numarası geçersiz.',
+  turnstile_missing: 'Lütfen güvenlik doğrulamasını tamamlayın.',
+  turnstile_failed: 'Güvenlik doğrulaması başarısız oldu. Lütfen tekrar deneyin.',
+  insert_failed: 'Mesaj kaydedilemedi. Lütfen tekrar deneyin.',
+  server_misconfigured: 'Mesaj servisi geçici olarak kullanılamıyor. Lütfen telefon veya e-posta ile iletişime geçin.',
+}
 
 export function ContactPage() {
   const { settings, getSection } = useSiteData()
@@ -33,6 +52,13 @@ export function ContactPage() {
   const [kvkkConsent, setKvkkConsent] = useState(false)
   const [honeypot, setHoneypot] = useState('')
   const [submitting, setSubmitting] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [widgetKey, setWidgetKey] = useState(0)
+
+  const resetWidget = () => {
+    setTurnstileToken(null)
+    setWidgetKey((k) => k + 1)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -72,25 +98,48 @@ export function ContactPage() {
       return
     }
 
-    setSubmitting(true)
-    const consentAt = new Date().toISOString()
-    const { error: err } = await getSupabase()!.from('contact_submissions').insert({
-      name: result.sanitized.name,
-      email: result.sanitized.email,
-      phone: result.sanitized.phone,
-      message: result.sanitized.message,
-      kvkk_consent: true,
-      kvkk_consent_at: consentAt,
-    })
-    setSubmitting(false)
-
-    if (err) {
-      setError('Mesaj gönderilemedi. Lütfen tekrar deneyin.')
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      setError('Lütfen güvenlik doğrulamasını tamamlayın.')
       return
     }
 
-    markContactSubmitted()
-    setSubmitted(true)
+    setSubmitting(true)
+    try {
+      const supabaseUrl = resolveSupabaseClientUrl()
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() ?? ''
+      const endpoint = `${supabaseUrl!.replace(/\/$/, '')}/functions/v1/contact-submit`
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          name: result.sanitized.name,
+          email: result.sanitized.email,
+          phone: result.sanitized.phone,
+          message: result.sanitized.message,
+          kvkkConsent: true,
+          turnstileToken: turnstileToken ?? '',
+          honeypot: '',
+        }),
+      })
+      const data = (await res.json().catch(() => null)) as { ok?: boolean; error?: string } | null
+      if (!res.ok || !data?.ok) {
+        const code = data?.error ?? 'insert_failed'
+        setError(CONTACT_ERROR_MESSAGES[code] ?? 'Mesaj gönderilemedi. Lütfen tekrar deneyin.')
+        resetWidget()
+        return
+      }
+      markContactSubmitted()
+      setSubmitted(true)
+    } catch {
+      setError('Mesaj gönderilemedi. İnternet bağlantınızı kontrol edip tekrar deneyin.')
+      resetWidget()
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const contactInfo = [
@@ -223,9 +272,22 @@ export function ContactPage() {
                         &apos;ni okudum; kişisel verilerimin belirtilen amaçlarla işlenmesini kabul ediyorum.
                       </span>
                     </label>
-                    <Button type="submit" size="lg" disabled={!kvkkConsent || submitting}>
+                    {TURNSTILE_SITE_KEY && (
+                      <TurnstileWidget
+                        key={widgetKey}
+                        siteKey={TURNSTILE_SITE_KEY}
+                        onToken={setTurnstileToken}
+                        onExpired={() => setTurnstileToken(null)}
+                        onError={() => setTurnstileToken(null)}
+                      />
+                    )}
+                    <Button
+                      type="submit"
+                      size="lg"
+                      disabled={!kvkkConsent || submitting || (!!TURNSTILE_SITE_KEY && !turnstileToken)}
+                    >
                       <Send className="h-4 w-4" />
-                      Gönder
+                      {submitting ? 'Gönderiliyor…' : 'Gönder'}
                     </Button>
                   </form>
                 )}

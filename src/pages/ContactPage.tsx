@@ -54,6 +54,7 @@ export function ContactPage() {
   const [submitting, setSubmitting] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [widgetKey, setWidgetKey] = useState(0)
+  const [turnstileErrorCode, setTurnstileErrorCode] = useState<string | null>(null)
 
   const resetWidget = () => {
     setTurnstileToken(null)
@@ -273,13 +274,28 @@ export function ContactPage() {
                       </span>
                     </label>
                     {TURNSTILE_SITE_KEY && (
-                      <TurnstileWidget
-                        key={widgetKey}
-                        siteKey={TURNSTILE_SITE_KEY}
-                        onToken={setTurnstileToken}
-                        onExpired={() => setTurnstileToken(null)}
-                        onError={() => setTurnstileToken(null)}
-                      />
+                      <div>
+                        <TurnstileWidget
+                          key={widgetKey}
+                          siteKey={TURNSTILE_SITE_KEY}
+                          onToken={(token) => {
+                            setTurnstileToken(token)
+                            setTurnstileErrorCode(null)
+                          }}
+                          onExpired={() => setTurnstileToken(null)}
+                          onError={(code) => {
+                            setTurnstileToken(null)
+                            setTurnstileErrorCode(code ?? 'unknown')
+                          }}
+                        />
+                        {turnstileErrorCode && (
+                          <p className="mt-2 text-xs text-red-600">
+                            Güvenlik doğrulaması yüklenemedi (kod: <code>{turnstileErrorCode}</code>,
+                            host: <code>{typeof window !== 'undefined' ? window.location.hostname : ''}</code>).
+                            Sayfayı yenilemeyi veya reklam engelleyicinizi kapatmayı deneyin.
+                          </p>
+                        )}
+                      </div>
                     )}
                     <Button
                       type="submit"

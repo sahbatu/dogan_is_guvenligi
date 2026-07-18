@@ -12,11 +12,12 @@ declare global {
           sitekey: string
           callback?: (token: string) => void
           'expired-callback'?: () => void
-          'error-callback'?: () => void
+          'error-callback'?: (errorCode?: string) => void | boolean
           theme?: 'light' | 'dark' | 'auto'
           size?: 'normal' | 'compact' | 'flexible'
           language?: string
           appearance?: 'always' | 'execute' | 'interaction-only'
+          retry?: 'auto' | 'never'
         },
       ) => string
       reset: (widgetId?: string) => void
@@ -30,7 +31,7 @@ function loadTurnstileScript(): Promise<void> {
   if (typeof window === 'undefined') return Promise.resolve()
   if (window.turnstile) return Promise.resolve()
   if (scriptLoading) return scriptLoading
-  scriptLoading = new Promise<void>((resolve) => {
+  scriptLoading = new Promise<void>((resolve, reject) => {
     window.__turnstileOnLoad = () => resolve()
     const existing = document.querySelector<HTMLScriptElement>(`script[src^="${SCRIPT_SRC.split('?')[0]}"]`)
     if (existing) {
@@ -41,6 +42,7 @@ function loadTurnstileScript(): Promise<void> {
     s.src = SCRIPT_SRC
     s.async = true
     s.defer = true
+    s.onerror = () => reject(new Error('turnstile-script-load-failed'))
     document.head.appendChild(s)
   })
   return scriptLoading
@@ -50,7 +52,7 @@ interface TurnstileWidgetProps {
   siteKey: string
   onToken: (token: string) => void
   onExpired?: () => void
-  onError?: () => void
+  onError?: (errorCode?: string) => void
   theme?: 'light' | 'dark' | 'auto'
   className?: string
 }
@@ -73,17 +75,33 @@ export function TurnstileWidget({
     let cancelled = false
     let mountedWidgetId: string | null = null
 
-    loadTurnstileScript().then(() => {
-      if (cancelled || !containerRef.current || !window.turnstile) return
-      mountedWidgetId = window.turnstile.render(containerRef.current, {
-        sitekey: siteKey,
-        theme,
-        callback: (token) => callbacksRef.current.onToken(token),
-        'expired-callback': () => callbacksRef.current.onExpired?.(),
-        'error-callback': () => callbacksRef.current.onError?.(),
+    loadTurnstileScript()
+      .then(() => {
+        if (cancelled || !containerRef.current || !window.turnstile) return
+        mountedWidgetId = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          theme,
+          retry: 'auto',
+          callback: (token) => callbacksRef.current.onToken(token),
+          'expired-callback': () => callbacksRef.current.onExpired?.(),
+          'error-callback': (code) => {
+            // eslint-disable-next-line no-console
+            console.warn('[turnstile] error-callback', {
+              code,
+              hostname: typeof window !== 'undefined' ? window.location.hostname : null,
+              siteKey,
+            })
+            callbacksRef.current.onError?.(code)
+            return true
+          },
+        })
+        widgetIdRef.current = mountedWidgetId
       })
-      widgetIdRef.current = mountedWidgetId
-    })
+      .catch((err) => {
+        // eslint-disable-next-line no-console
+        console.error('[turnstile] script load failed', err)
+        callbacksRef.current.onError?.('script-load-failed')
+      })
 
     return () => {
       cancelled = true

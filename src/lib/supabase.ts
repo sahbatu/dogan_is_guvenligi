@@ -65,7 +65,7 @@ function isRealSupabaseConfig(url?: string, key?: string): boolean {
 export const isSupabaseConfigured = isRealSupabaseConfig(getRemoteSupabaseUrl(), supabaseAnonKey)
 
 /** Ağ hatası / timeout durumunda demo veriye hızlı düşmek için */
-export async function withFetchTimeout<T>(promise: PromiseLike<T>, ms = 4000): Promise<T> {
+export async function withFetchTimeout<T>(promise: PromiseLike<T>, ms = 15000): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     return await Promise.race([

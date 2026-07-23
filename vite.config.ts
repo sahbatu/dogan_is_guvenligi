@@ -55,6 +55,7 @@ export default defineConfig(({ mode }) => {
       ),
     },
     preview: {
+      allowedHosts: true,
       proxy: Object.fromEntries(
         supabaseProxyPaths.map((route) => [
           route,

@@ -10,8 +10,8 @@
     "build": "tsc -b && vite build",
     "postbuild": "tsx scripts/prerender.ts",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "start": "vite preview"
+    "preview": "vite preview --port 3000 --strictPort --host 0.0.0.0",
+    "start": "vite preview --port 3000 --strictPort --host 0.0.0.0"
   },
   "dependencies": {
     "@fontsource/inter": "^5.2.8",

@@ -85,21 +85,13 @@ export function TurnstileWidget({
           callback: (token) => callbacksRef.current.onToken(token),
           'expired-callback': () => callbacksRef.current.onExpired?.(),
           'error-callback': (code) => {
-            // eslint-disable-next-line no-console
-            console.warn('[turnstile] error-callback', {
-              code,
-              hostname: typeof window !== 'undefined' ? window.location.hostname : null,
-              siteKey,
-            })
             callbacksRef.current.onError?.(code)
             return true
           },
         })
         widgetIdRef.current = mountedWidgetId
       })
-      .catch((err) => {
-        // eslint-disable-next-line no-console
-        console.error('[turnstile] script load failed', err)
+      .catch(() => {
         callbacksRef.current.onError?.('script-load-failed')
       })
 

@@ -54,7 +54,7 @@ export function ContactPage() {
   const [submitting, setSubmitting] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [widgetKey, setWidgetKey] = useState(0)
-  const [turnstileErrorCode, setTurnstileErrorCode] = useState<string | null>(null)
+  const [turnstileFailed, setTurnstileFailed] = useState(false)
 
   const resetWidget = () => {
     setTurnstileToken(null)
@@ -280,19 +280,17 @@ export function ContactPage() {
                           siteKey={TURNSTILE_SITE_KEY}
                           onToken={(token) => {
                             setTurnstileToken(token)
-                            setTurnstileErrorCode(null)
+                            setTurnstileFailed(false)
                           }}
                           onExpired={() => setTurnstileToken(null)}
-                          onError={(code) => {
+                          onError={() => {
                             setTurnstileToken(null)
-                            setTurnstileErrorCode(code ?? 'unknown')
+                            setTurnstileFailed(true)
                           }}
                         />
-                        {turnstileErrorCode && (
+                        {turnstileFailed && (
                           <p className="mt-2 text-xs text-red-600">
-                            Güvenlik doğrulaması yüklenemedi (kod: <code>{turnstileErrorCode}</code>,
-                            host: <code>{typeof window !== 'undefined' ? window.location.hostname : ''}</code>).
-                            Sayfayı yenilemeyi veya reklam engelleyicinizi kapatmayı deneyin.
+                            Güvenlik doğrulaması yüklenemedi. Sayfayı yenilemeyi deneyin.
                           </p>
                         )}
                       </div>

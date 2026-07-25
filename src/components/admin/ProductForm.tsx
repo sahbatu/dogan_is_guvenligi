@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import type { Category, Product } from '@/lib/supabase'
 import { Input } from '@/components/ui/Input'
@@ -45,11 +45,39 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ categories, initial, onSubmit, onCancel }: ProductFormProps) {
+  const parents = useMemo(
+    () =>
+      categories
+        .filter((c) => !c.parent_id)
+        .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || a.name.localeCompare(b.name, 'tr')),
+    [categories],
+  )
+  const childrenByParent = useMemo(() => {
+    const map = new Map<string, Category[]>()
+    for (const c of categories) {
+      if (!c.parent_id) continue
+      const list = map.get(c.parent_id) ?? []
+      list.push(c)
+      map.set(c.parent_id, list)
+    }
+    for (const list of map.values()) list.sort((a, b) => a.name.localeCompare(b.name, 'tr'))
+    return map
+  }, [categories])
+
+  const initialCategoryId = initial?.category_id ?? ''
+  const initialParentId = useMemo(() => {
+    if (!initialCategoryId) return parents[0]?.id ?? ''
+    const cat = categories.find((c) => c.id === initialCategoryId)
+    if (!cat) return parents[0]?.id ?? ''
+    return cat.parent_id ?? cat.id
+  }, [initialCategoryId, categories, parents])
+
   const [tab, setTab] = useState<'content' | 'seo'>('content')
   const [name, setName] = useState(initial?.name ?? '')
   const [slug, setSlug] = useState(initial?.slug ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
-  const [categoryId, setCategoryId] = useState(initial?.category_id ?? categories[0]?.id ?? '')
+  const [parentCategoryId, setParentCategoryId] = useState(initialParentId)
+  const [categoryId, setCategoryId] = useState(initialCategoryId || initialParentId)
   const [imageUrls, setImageUrls] = useState<string[]>(() =>
     initial ? normalizeProductImages(initial) : [],
   )
@@ -83,6 +111,23 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
 
   const selectedCategoryId =
     resolveCategoryId(categoryId, categories) ?? ''
+
+  const currentChildren = useMemo(
+    () => (parentCategoryId ? childrenByParent.get(parentCategoryId) ?? [] : []),
+    [parentCategoryId, childrenByParent],
+  )
+
+  const handleParentChange = (nextParentId: string) => {
+    setParentCategoryId(nextParentId)
+    const kids = childrenByParent.get(nextParentId) ?? []
+    if (kids.length === 0) {
+      setCategoryId(nextParentId)
+    } else {
+      const currentCat = categories.find((c) => c.id === categoryId)
+      const stillValid = currentCat && currentCat.parent_id === nextParentId
+      if (!stillValid) setCategoryId('')
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -176,16 +221,46 @@ export function ProductForm({ categories, initial, onSubmit, onCancel }: Product
                 .
               </p>
             ) : (
-              <select
-                value={selectedCategoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                className="w-full rounded-xl border border-navy-900/10 bg-white px-4 py-3 text-navy-950"
-                required
-              >
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted">
+                    Ana Kategori
+                  </label>
+                  <select
+                    value={parentCategoryId}
+                    onChange={(e) => handleParentChange(e.target.value)}
+                    className="w-full rounded-xl border border-navy-900/10 bg-white px-4 py-3 text-navy-950"
+                    required
+                  >
+                    <option value="">— Seçin —</option>
+                    {parents.map((p) => (
+                      <option key={p.id} value={p.id}>{p.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-xs font-medium uppercase tracking-wider text-muted">
+                    Alt Kategori
+                  </label>
+                  {currentChildren.length === 0 ? (
+                    <div className="rounded-xl border border-navy-900/10 bg-surface/50 px-4 py-3 text-sm text-muted">
+                      Bu ana kategoride alt kategori yok — ürün doğrudan ana kategoriye kaydedilir.
+                    </div>
+                  ) : (
+                    <select
+                      value={selectedCategoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full rounded-xl border border-navy-900/10 bg-white px-4 py-3 text-navy-950"
+                      required
+                    >
+                      <option value="">— Seçin —</option>
+                      {currentChildren.map((cat) => (
+                        <option key={cat.id} value={cat.id}>{cat.name}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              </div>
             )}
           </div>
           <MultiImageUpload value={imageUrls} onChange={setImageUrls} />

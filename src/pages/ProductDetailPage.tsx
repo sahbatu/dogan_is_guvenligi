@@ -1,6 +1,9 @@
+import { useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
 import { ArrowLeft, Tag } from 'lucide-react'
+
+import { trackPageView } from '@/lib/analytics'
 
 import { PageSeo } from '@/components/seo/PageSeo'
 
@@ -35,6 +38,14 @@ export function ProductDetailPage() {
   const { product, loading } = useProduct(slug ?? '')
 
   const { settings } = useSiteData()
+
+  useEffect(() => {
+    if (!product) return
+    trackPageView(`/e-katalog/${product.slug}`, {
+      productId: product.id,
+      productSlug: product.slug,
+    })
+  }, [product])
 
 
 

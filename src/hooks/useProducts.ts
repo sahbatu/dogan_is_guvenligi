@@ -78,7 +78,11 @@ export function useProducts(options?: { includeInactive?: boolean }) {
 
         Promise.all([
 
-          supabase.from('categories').select('*').order('name'),
+          supabase
+            .from('categories')
+            .select('*')
+            .order('sort_order', { ascending: true })
+            .order('name', { ascending: true }),
 
           supabase
 

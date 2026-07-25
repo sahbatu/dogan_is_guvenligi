@@ -8,7 +8,9 @@ interface CategoryFilterProps {
 }
 
 export function CategoryFilter({ categories, selected, onSelect }: CategoryFilterProps) {
-  const chips = [{ slug: null, name: 'Tümü' }, ...categories.map((c) => ({ slug: c.slug, name: c.name }))]
+  // Mobilde yerden tasarruf için sadece ana kategorileri chip olarak göster.
+  const parents = categories.filter((c) => !c.parent_id)
+  const chips = [{ slug: null, name: 'Tümü' }, ...parents.map((c) => ({ slug: c.slug, name: c.name }))]
 
   return (
     <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

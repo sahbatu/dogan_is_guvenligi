@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageMeta'
 import { PageSeo } from '@/components/seo/PageSeo'
 import { useSiteData } from '@/contexts/SiteDataContext'
@@ -12,8 +12,38 @@ import { FadeIn } from '@/components/ui/FadeIn'
 import { images } from '@/data/images'
 import { cn } from '@/lib/utils'
 import { stripHtml } from '@/lib/rich-text'
+import type { Category, Product } from '@/lib/supabase'
 
 const PAGE_SIZE = 20
+
+interface CategoryTreeNode {
+  cat: Category
+  children: Category[]
+  productCount: number
+}
+
+function buildCategoryTree(categories: Category[], products: Product[]): CategoryTreeNode[] {
+  const countBySlug = new Map<string, number>()
+  for (const p of products) {
+    const slug = p.category?.slug
+    if (slug) countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1)
+  }
+  const parents = categories.filter((c) => !c.parent_id)
+  const childrenByParent = new Map<string, Category[]>()
+  for (const c of categories) {
+    if (!c.parent_id) continue
+    const list = childrenByParent.get(c.parent_id) ?? []
+    list.push(c)
+    childrenByParent.set(c.parent_id, list)
+  }
+  return parents.map((cat) => {
+    const children = childrenByParent.get(cat.id) ?? []
+    const productCount =
+      (countBySlug.get(cat.slug) ?? 0) +
+      children.reduce((sum, ch) => sum + (countBySlug.get(ch.slug) ?? 0), 0)
+    return { cat, children, productCount }
+  })
+}
 
 export function CatalogPage() {
   const { settings } = useSiteData()
@@ -47,12 +77,55 @@ export function CatalogPage() {
     })
   }
 
+  const tree = useMemo(() => buildCategoryTree(categories, products), [categories, products])
+
+  const activeParentSlug = useMemo(() => {
+    if (!selectedCategory) return null
+    const selected = categories.find((c) => c.slug === selectedCategory)
+    if (!selected) return null
+    if (!selected.parent_id) return selected.slug
+    const parent = categories.find((c) => c.id === selected.parent_id)
+    return parent?.slug ?? null
+  }, [categories, selectedCategory])
+
+  const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    if (activeParentSlug) {
+      setExpandedParents((prev) => {
+        if (prev.has(activeParentSlug)) return prev
+        const next = new Set(prev)
+        next.add(activeParentSlug)
+        return next
+      })
+    }
+  }, [activeParentSlug])
+
+  const toggleParent = (slug: string) => {
+    setExpandedParents((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
+      return next
+    })
+  }
+
   const filtered = useMemo(() => {
     let result = products
     if (selectedCategory) {
-      result = result.filter(
-        (p) => p.category?.slug === selectedCategory || p.category_id === selectedCategory,
-      )
+      const selected = categories.find((c) => c.slug === selectedCategory)
+      if (selected && !selected.parent_id) {
+        const childIds = new Set(
+          categories.filter((c) => c.parent_id === selected.id).map((c) => c.id),
+        )
+        childIds.add(selected.id)
+        result = result.filter(
+          (p) => (p.category_id && childIds.has(p.category_id)) || false,
+        )
+      } else {
+        result = result.filter(
+          (p) => p.category?.slug === selectedCategory || p.category_id === selectedCategory,
+        )
+      }
     }
     if (search.trim()) {
       const q = search.toLowerCase()
@@ -63,7 +136,7 @@ export function CatalogPage() {
       )
     }
     return result
-  }, [products, selectedCategory, search])
+  }, [products, categories, selectedCategory, search])
 
   const pageParam = Number(searchParams.get('sayfa') ?? '1')
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -118,7 +191,7 @@ export function CatalogPage() {
 
       <section className="bg-white py-12 lg:py-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-16 xl:grid-cols-[240px_1fr]">
+          <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-14 xl:grid-cols-[280px_1fr]">
             <aside className="hidden lg:block">
               <FadeIn>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
@@ -132,17 +205,42 @@ export function CatalogPage() {
                   >
                     Tüm Ürünler
                   </CategoryNavItem>
-                  {categories.map((cat) => {
-                    const count = products.filter((p) => p.category?.slug === cat.slug).length
+                  {tree.map(({ cat, children, productCount }) => {
+                    const expanded =
+                      expandedParents.has(cat.slug) || activeParentSlug === cat.slug
                     return (
-                      <CategoryNavItem
-                        key={cat.id}
-                        active={selectedCategory === cat.slug}
-                        onClick={() => handleCategory(cat.slug)}
-                        count={count}
-                      >
-                        {cat.name}
-                      </CategoryNavItem>
+                      <div key={cat.id}>
+                        <ParentNavItem
+                          active={selectedCategory === cat.slug}
+                          expanded={expanded}
+                          onSelect={() => handleCategory(cat.slug)}
+                          onToggle={() => toggleParent(cat.slug)}
+                          count={productCount}
+                          hasChildren={children.length > 0}
+                        >
+                          {cat.name}
+                        </ParentNavItem>
+                        {expanded && children.length > 0 && (
+                          <div className="ml-3 border-l border-navy-900/10 pl-1">
+                            {children.map((child) => {
+                              const count = products.filter(
+                                (p) => p.category?.slug === child.slug,
+                              ).length
+                              return (
+                                <CategoryNavItem
+                                  key={child.id}
+                                  active={selectedCategory === child.slug}
+                                  onClick={() => handleCategory(child.slug)}
+                                  count={count}
+                                  compact
+                                >
+                                  {child.name}
+                                </CategoryNavItem>
+                              )
+                            })}
+                          </div>
+                        )}
+                      </div>
                     )
                   })}
                 </nav>
@@ -244,11 +342,13 @@ function CategoryNavItem({
   active,
   onClick,
   count,
+  compact = false,
   children,
 }: {
   active: boolean
   onClick: () => void
   count: number
+  compact?: boolean
   children: ReactNode
 }) {
   return (
@@ -256,21 +356,79 @@ function CategoryNavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full items-center justify-between border-l-2 py-2.5 pl-4 pr-2 text-left text-sm transition-colors',
+        'group flex w-full items-center justify-between border-l-2 pr-2 text-left transition-colors',
+        compact ? 'py-1.5 pl-3 text-[13px]' : 'py-2.5 pl-4 text-sm',
         active
           ? 'border-navy-900 font-semibold text-navy-900'
           : 'border-transparent text-muted hover:border-navy-900/20 hover:text-navy-900',
       )}
     >
-      <span>{children}</span>
+      <span className="truncate">{children}</span>
       <span
         className={cn(
-          'text-xs tabular-nums transition-colors',
+          'ml-2 shrink-0 text-xs tabular-nums transition-colors',
           active ? 'text-navy-900/50' : 'text-muted/60 group-hover:text-muted',
         )}
       >
         {count}
       </span>
     </button>
+  )
+}
+
+function ParentNavItem({
+  active,
+  expanded,
+  onSelect,
+  onToggle,
+  count,
+  hasChildren,
+  children,
+}: {
+  active: boolean
+  expanded: boolean
+  onSelect: () => void
+  onToggle: () => void
+  count: number
+  hasChildren: boolean
+  children: ReactNode
+}) {
+  return (
+    <div
+      className={cn(
+        'group flex w-full items-center border-l-2 pr-1 transition-colors',
+        active
+          ? 'border-navy-900 font-semibold text-navy-900'
+          : 'border-transparent text-navy-900/80 hover:border-navy-900/20 hover:text-navy-900',
+      )}
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex flex-1 items-center justify-between py-2.5 pl-4 pr-2 text-left text-sm"
+      >
+        <span className="truncate">{children}</span>
+        <span
+          className={cn(
+            'ml-2 shrink-0 text-xs tabular-nums',
+            active ? 'text-navy-900/50' : 'text-muted/60 group-hover:text-muted',
+          )}
+        >
+          {count}
+        </span>
+      </button>
+      {hasChildren && (
+        <button
+          type="button"
+          onClick={onToggle}
+          aria-label={expanded ? 'Alt kategorileri gizle' : 'Alt kategorileri göster'}
+          className="ml-1 rounded p-1 text-muted/70 hover:bg-navy-900/5 hover:text-navy-900"
+        >
+          <ChevronDown
+            className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')}
+          />
+        </button>
+      )}
+    </div>
   )
 }

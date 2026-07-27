@@ -356,17 +356,17 @@ function CategoryNavItem({
       type="button"
       onClick={onClick}
       className={cn(
-        'group flex w-full items-center justify-between border-l-2 pr-2 text-left transition-colors',
+        'group flex w-full items-start justify-between gap-2 border-l-2 pr-2 text-left transition-colors',
         compact ? 'py-1.5 pl-3 text-[13px]' : 'py-2.5 pl-4 text-sm',
         active
           ? 'border-navy-900 font-semibold text-navy-900'
           : 'border-transparent text-muted hover:border-navy-900/20 hover:text-navy-900',
       )}
     >
-      <span className="truncate">{children}</span>
+      <span className="min-w-0 flex-1 break-words leading-snug">{children}</span>
       <span
         className={cn(
-          'ml-2 shrink-0 text-xs tabular-nums transition-colors',
+          'mt-0.5 shrink-0 text-xs tabular-nums transition-colors',
           active ? 'text-navy-900/50' : 'text-muted/60 group-hover:text-muted',
         )}
       >
@@ -396,7 +396,7 @@ function ParentNavItem({
   return (
     <div
       className={cn(
-        'group flex w-full items-center border-l-2 pr-1 transition-colors',
+        'group flex w-full items-start border-l-2 pr-1 transition-colors',
         active
           ? 'border-navy-900 font-semibold text-navy-900'
           : 'border-transparent text-navy-900/80 hover:border-navy-900/20 hover:text-navy-900',
@@ -405,12 +405,12 @@ function ParentNavItem({
       <button
         type="button"
         onClick={onSelect}
-        className="flex flex-1 items-center justify-between py-2.5 pl-4 pr-2 text-left text-sm"
+        className="flex min-w-0 flex-1 items-start justify-between gap-2 py-2.5 pl-4 pr-2 text-left text-sm"
       >
-        <span className="truncate">{children}</span>
+        <span className="min-w-0 flex-1 break-words leading-snug">{children}</span>
         <span
           className={cn(
-            'ml-2 shrink-0 text-xs tabular-nums',
+            'mt-0.5 shrink-0 text-xs tabular-nums',
             active ? 'text-navy-900/50' : 'text-muted/60 group-hover:text-muted',
           )}
         >
@@ -422,7 +422,7 @@ function ParentNavItem({
           type="button"
           onClick={onToggle}
           aria-label={expanded ? 'Alt kategorileri gizle' : 'Alt kategorileri göster'}
-          className="ml-1 rounded p-1 text-muted/70 hover:bg-navy-900/5 hover:text-navy-900"
+          className="ml-1 mt-2 shrink-0 rounded p-1 text-muted/70 hover:bg-navy-900/5 hover:text-navy-900"
         >
           <ChevronDown
             className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')}

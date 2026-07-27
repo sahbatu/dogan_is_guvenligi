@@ -74,39 +74,44 @@ export function useProducts(options?: { includeInactive?: boolean }) {
 
     try {
 
-      const [catRes, prodRes] = await withFetchTimeout(
+      const PAGE_SIZE = 1000
+      async function fetchAllProducts(): Promise<Product[]> {
+        const collected: Product[] = []
+        let from = 0
+        while (true) {
+          const to = from + PAGE_SIZE - 1
+          const { data, error } = await withFetchTimeout(
+            supabase
+              .from('products')
+              .select('*, category:categories(*)')
+              .order('created_at', { ascending: false })
+              .order('sort_order', { ascending: true })
+              .order('id', { ascending: true })
+              .range(from, to),
+          )
+          if (error) throw error
+          const rows = (data ?? []) as Product[]
+          collected.push(...rows)
+          if (rows.length < PAGE_SIZE) break
+          from += PAGE_SIZE
+        }
+        return collected
+      }
 
-        Promise.all([
-
+      const [catRes, prodRows] = await Promise.all([
+        withFetchTimeout(
           supabase
             .from('categories')
             .select('*')
             .order('sort_order', { ascending: true })
             .order('name', { ascending: true }),
-
-          supabase
-
-            .from('products')
-
-            .select('*, category:categories(*)')
-
-            .order('created_at', { ascending: false })
-
-            .order('sort_order', { ascending: true }),
-
-        ]),
-
-      )
-
-
+        ),
+        fetchAllProducts(),
+      ])
 
       if (catRes.error) throw catRes.error
 
-      if (prodRes.error) throw prodRes.error
-
-
-
-      let prods = ((prodRes.data ?? []) as Product[]).map(mapProduct)
+      let prods = prodRows.map(mapProduct)
 
       if (!options?.includeInactive) {
 

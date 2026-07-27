@@ -4,31 +4,77 @@ import { ArrowUpRight } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
 import { ProductGrid } from '@/components/catalog/ProductGrid'
 import { FadeIn } from '@/components/ui/FadeIn'
-import type { Product } from '@/lib/supabase'
+import type { Category, Product } from '@/lib/supabase'
 
-function pickRandomProducts(products: Product[], excludeSlug: string, count = 4): Product[] {
-  const pool = products.filter((p) => p.slug !== excludeSlug)
+function shuffle<T>(items: T[]): T[] {
+  const arr = [...items]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
+
+function pickRelatedProducts(
+  products: Product[],
+  categories: Category[],
+  currentSlug: string,
+  currentCategoryId: string | null,
+  count: number,
+): Product[] {
+  const pool = products.filter((p) => p.slug !== currentSlug)
   if (pool.length === 0) return []
 
-  const shuffled = [...pool]
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+  if (!currentCategoryId) return shuffle(pool).slice(0, count)
+
+  const currentCategory = categories.find((c) => c.id === currentCategoryId) ?? null
+  const parentId = currentCategory?.parent_id ?? null
+
+  const siblingCategoryIds = new Set<string>()
+  if (parentId) {
+    for (const c of categories) {
+      if (c.parent_id === parentId && c.id !== currentCategoryId) {
+        siblingCategoryIds.add(c.id)
+      }
+    }
   }
-  return shuffled.slice(0, Math.min(count, shuffled.length))
+
+  const sameCategory: Product[] = []
+  const sameParent: Product[] = []
+  const others: Product[] = []
+  for (const p of pool) {
+    if (p.category_id === currentCategoryId) sameCategory.push(p)
+    else if (p.category_id && siblingCategoryIds.has(p.category_id)) sameParent.push(p)
+    else others.push(p)
+  }
+
+  const picked: Product[] = []
+  for (const bucket of [sameCategory, sameParent, others]) {
+    if (picked.length >= count) break
+    for (const p of shuffle(bucket)) {
+      picked.push(p)
+      if (picked.length >= count) break
+    }
+  }
+  return picked
 }
 
 interface RecommendedProductsProps {
   currentSlug: string
+  currentCategoryId?: string | null
   limit?: number
 }
 
-export function RecommendedProducts({ currentSlug, limit = 4 }: RecommendedProductsProps) {
-  const { products, loading } = useProducts()
+export function RecommendedProducts({
+  currentSlug,
+  currentCategoryId = null,
+  limit = 4,
+}: RecommendedProductsProps) {
+  const { products, categories, loading } = useProducts()
 
   const recommended = useMemo(
-    () => pickRandomProducts(products, currentSlug, limit),
-    [products, currentSlug, limit],
+    () => pickRelatedProducts(products, categories, currentSlug, currentCategoryId, limit),
+    [products, categories, currentSlug, currentCategoryId, limit],
   )
 
   if (loading || recommended.length === 0) return null

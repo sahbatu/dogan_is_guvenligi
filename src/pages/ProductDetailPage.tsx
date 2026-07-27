@@ -273,7 +273,7 @@ export function ProductDetailPage() {
 
       </section>
 
-      <RecommendedProducts currentSlug={product.slug} />
+      <RecommendedProducts currentSlug={product.slug} currentCategoryId={product.category_id} />
 
     </>
 

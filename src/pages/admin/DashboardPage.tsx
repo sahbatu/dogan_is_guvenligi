@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Pencil, Trash2, Package, Banknote, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Trash2, Package, Banknote, Download, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useProducts } from '@/hooks/useProducts'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase'
 import type { Product } from '@/lib/supabase'
@@ -66,6 +66,12 @@ export function DashboardPage() {
             <Button variant="outline">
               <Banknote className="h-4 w-4" />
               Hızlı Fiyat
+            </Button>
+          </Link>
+          <Link to="/admin/panel/urunleri-disa-aktar">
+            <Button variant="outline">
+              <Download className="h-4 w-4" />
+              Excel Aktar
             </Button>
           </Link>
           <Link to="/admin/panel/urunler/yeni">

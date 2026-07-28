@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Mail, Phone, MapPin, Clock, Send } from 'lucide-react'
 import { LEGAL_PATHS } from '@/lib/legal-defaults'
 import { PageHeader } from '@/components/layout/PageMeta'
@@ -40,6 +40,7 @@ const CONTACT_ERROR_MESSAGES: Record<string, string> = {
 }
 
 export function ContactPage() {
+  const [searchParams] = useSearchParams()
   const { settings, getSection } = useSiteData()
   const contactData = getSection('contact', 'main') as { subtitle?: string; successMessage?: string }
   const [submitted, setSubmitted] = useState(false)
@@ -55,6 +56,14 @@ export function ContactPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [widgetKey, setWidgetKey] = useState(0)
   const [turnstileFailed, setTurnstileFailed] = useState(false)
+  const offerProduct = searchParams.get('urun')?.trim() ?? ''
+  const offerSku = searchParams.get('stok_kodu')?.trim() ?? ''
+
+  useEffect(() => {
+    if (!offerProduct) return
+    setSubject(`Teklif Talebi - ${offerProduct}`)
+    setMessage(`${offerProduct}${offerSku ? ` (Stok kodu: ${offerSku})` : ''} ürünü için fiyat ve teslimat bilgisi rica ediyorum.`)
+  }, [offerProduct, offerSku])
 
   const resetWidget = () => {
     setTurnstileToken(null)

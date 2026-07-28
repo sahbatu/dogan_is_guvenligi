@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageMeta'
 import { PageSeo } from '@/components/seo/PageSeo'
 import { useSiteData } from '@/contexts/SiteDataContext'
@@ -11,15 +11,61 @@ import { ProductGrid } from '@/components/catalog/ProductGrid'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { images } from '@/data/images'
 import { cn } from '@/lib/utils'
-import { stripHtml } from '@/lib/rich-text'
 import type { Category, Product } from '@/lib/supabase'
 
-const PAGE_SIZE = 20
+const PAGE_SIZE = 16
+type SortOption = 'default' | 'name-asc' | 'name-desc' | 'price-asc' | 'price-desc'
 
 interface CategoryTreeNode {
   cat: Category
   children: Category[]
   productCount: number
+}
+
+// Bazı eski kategoriler veri tabanında üst kategori atanmadan oluşturulmuş.
+// Katalogta bunları kullanıcı için anlamlı ana başlıklar altında gösteriyoruz.
+const virtualParentBySlug: Record<string, string> = {
+  'ankastre-sivi-sabun-ve-kopuk-sabun-dispenserleri': 'hijyen-aparatlari',
+  'bone-galos-dispenserleri': 'hijyen-aparatlari',
+  'cop-kovalari': 'cop-atik-posetleri',
+  'fotoselli-el-ve-yuz-kurutma-cihazi': 'hijyen-aparatlari',
+  'havlu-dispenserleri': 'hijyen-aparatlari',
+  'klozet-fircalari': 'paspas-perdeler',
+  'klozet-kapak-ortusu-dispenserleri': 'hijyen-aparatlari',
+  'kopuk-sabun-dispenserleri': 'hijyen-aparatlari',
+  'krom-kullukler': 'cop-atik-posetleri',
+  'metal-yercek-ve-camcek-dispenserleri': 'paspas-perdeler',
+  'nano-hijyen-dispenserleri-ve-koku-likitleri': 'hijyen-aparatlari',
+  'pecetelikler': 'hijyen-aparatlari',
+  'pisuvar-suzgecler': 'hijyen-aparatlari',
+  'plastik-bardak-ve-karton-bardak-dispenserleri': 'hijyen-aparatlari',
+  'sivi-sabun-dispenserleri': 'hijyen-aparatlari',
+  'strec-dispenserleri': 'hijyen-aparatlari',
+  'trigerli-sivi-puskurtuculeri-oda-kokulari': 'hijyen-aparatlari',
+  'tuvalet-kagidi-dispenserleri': 'hijyen-aparatlari',
+}
+
+function compareCategories(left: Category, right: Category): number {
+  return left.name.localeCompare(right.name, 'tr-TR', { sensitivity: 'base' })
+}
+
+function descendantCategoryIds(categoryId: string, categories: Category[]): Set<string> {
+  const ids = new Set([categoryId])
+  const queue = [categoryId]
+
+  while (queue.length > 0) {
+    const parentId = queue.shift()!
+    const parent = categories.find((category) => category.id === parentId)
+    for (const category of categories) {
+      const isVirtualChild = parent && virtualParentBySlug[category.slug] === parent.slug
+      if ((category.parent_id === parentId || isVirtualChild) && !ids.has(category.id)) {
+        ids.add(category.id)
+        queue.push(category.id)
+      }
+    }
+  }
+
+  return ids
 }
 
 function buildCategoryTree(categories: Category[], products: Product[]): CategoryTreeNode[] {
@@ -28,7 +74,9 @@ function buildCategoryTree(categories: Category[], products: Product[]): Categor
     const slug = p.category?.slug
     if (slug) countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1)
   }
-  const parents = categories.filter((c) => !c.parent_id)
+  const parents = categories
+    .filter((category) => !category.parent_id && !virtualParentBySlug[category.slug])
+    .sort(compareCategories)
   const childrenByParent = new Map<string, Category[]>()
   for (const c of categories) {
     if (!c.parent_id) continue
@@ -37,10 +85,14 @@ function buildCategoryTree(categories: Category[], products: Product[]): Categor
     childrenByParent.set(c.parent_id, list)
   }
   return parents.map((cat) => {
-    const children = childrenByParent.get(cat.id) ?? []
-    const productCount =
-      (countBySlug.get(cat.slug) ?? 0) +
-      children.reduce((sum, ch) => sum + (countBySlug.get(ch.slug) ?? 0), 0)
+    const virtualChildren = categories.filter((category) => virtualParentBySlug[category.slug] === cat.slug)
+    const children = [...(childrenByParent.get(cat.id) ?? []), ...virtualChildren]
+      .filter((category, index, list) => list.findIndex((item) => item.id === category.id) === index)
+      .sort(compareCategories)
+    const categoryIds = descendantCategoryIds(cat.id, categories)
+    const productCount = categories
+      .filter((category) => categoryIds.has(category.id))
+      .reduce((sum, category) => sum + (countBySlug.get(category.slug) ?? 0), 0)
     return { cat, children, productCount }
   })
 }
@@ -48,11 +100,12 @@ function buildCategoryTree(categories: Category[], products: Product[]): Categor
 export function CatalogPage() {
   const { settings } = useSiteData()
   const [searchParams, setSearchParams] = useSearchParams()
-  const { products, categories, loading } = useProducts()
+  const { products, categories, loading } = useProducts({ compact: true })
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
     searchParams.get('kategori'),
   )
   const [search, setSearch] = useState('')
+  const sortOption = (searchParams.get('siralama') ?? 'default') as SortOption
 
   useEffect(() => {
     const cat = searchParams.get('kategori')
@@ -77,28 +130,37 @@ export function CatalogPage() {
     })
   }
 
-  const tree = useMemo(() => buildCategoryTree(categories, products), [categories, products])
+  const handleSortChange = (value: SortOption) => {
+    setSearchParams((previous) => {
+      const next = new URLSearchParams(previous)
+      next.delete('sayfa')
+      if (value === 'default') next.delete('siralama')
+      else next.set('siralama', value)
+      return next
+    })
+  }
 
-  const activeParentSlug = useMemo(() => {
-    if (!selectedCategory) return null
-    const selected = categories.find((c) => c.slug === selectedCategory)
-    if (!selected) return null
-    if (!selected.parent_id) return selected.slug
-    const parent = categories.find((c) => c.id === selected.parent_id)
-    return parent?.slug ?? null
-  }, [categories, selectedCategory])
+  const tree = useMemo(() => buildCategoryTree(categories, products), [categories, products])
 
   const [expandedParents, setExpandedParents] = useState<Set<string>>(new Set())
   useEffect(() => {
-    if (activeParentSlug) {
-      setExpandedParents((prev) => {
-        if (prev.has(activeParentSlug)) return prev
-        const next = new Set(prev)
-        next.add(activeParentSlug)
-        return next
-      })
+    if (!selectedCategory) return
+    const ancestors = new Set<string>()
+    let current = categories.find((category) => category.slug === selectedCategory)
+
+    while (current) {
+      const parent = current.parent_id
+        ? categories.find((category) => category.id === current!.parent_id)
+        : categories.find((category) => category.slug === virtualParentBySlug[current!.slug])
+      if (!parent || ancestors.has(parent.slug)) break
+      ancestors.add(parent.slug)
+      current = parent
     }
-  }, [activeParentSlug])
+
+    if (ancestors.size > 0) {
+      setExpandedParents((previous) => new Set([...previous, ...ancestors]))
+    }
+  }, [categories, selectedCategory])
 
   const toggleParent = (slug: string) => {
     setExpandedParents((prev) => {
@@ -113,17 +175,10 @@ export function CatalogPage() {
     let result = products
     if (selectedCategory) {
       const selected = categories.find((c) => c.slug === selectedCategory)
-      if (selected && !selected.parent_id) {
-        const childIds = new Set(
-          categories.filter((c) => c.parent_id === selected.id).map((c) => c.id),
-        )
-        childIds.add(selected.id)
+      if (selected) {
+        const childIds = descendantCategoryIds(selected.id, categories)
         result = result.filter(
           (p) => (p.category_id && childIds.has(p.category_id)) || false,
-        )
-      } else {
-        result = result.filter(
-          (p) => p.category?.slug === selectedCategory || p.category_id === selectedCategory,
         )
       }
     }
@@ -132,11 +187,20 @@ export function CatalogPage() {
       result = result.filter(
         (p) =>
           p.name.toLowerCase().includes(q) ||
-          (p.description && stripHtml(p.description).toLowerCase().includes(q)),
+          p.category?.name.toLowerCase().includes(q),
       )
     }
     return result
   }, [products, categories, selectedCategory, search])
+
+  const sortedProducts = useMemo(() => {
+    const items = [...filtered]
+    if (sortOption === 'name-asc') return items.sort((left, right) => left.name.localeCompare(right.name, 'tr-TR'))
+    if (sortOption === 'name-desc') return items.sort((left, right) => right.name.localeCompare(left.name, 'tr-TR'))
+    if (sortOption === 'price-asc') return items.sort((left, right) => (left.price ?? Number.POSITIVE_INFINITY) - (right.price ?? Number.POSITIVE_INFINITY))
+    if (sortOption === 'price-desc') return items.sort((left, right) => (right.price ?? Number.NEGATIVE_INFINITY) - (left.price ?? Number.NEGATIVE_INFINITY))
+    return items
+  }, [filtered, sortOption])
 
   const pageParam = Number(searchParams.get('sayfa') ?? '1')
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE))
@@ -144,8 +208,8 @@ export function CatalogPage() {
 
   const pagedProducts = useMemo(() => {
     const start = (currentPage - 1) * PAGE_SIZE
-    return filtered.slice(start, start + PAGE_SIZE)
-  }, [filtered, currentPage])
+    return sortedProducts.slice(start, start + PAGE_SIZE)
+  }, [sortedProducts, currentPage])
 
   const goToPage = (page: number) => {
     const target = Math.min(Math.max(1, page), totalPages)
@@ -179,7 +243,7 @@ export function CatalogPage() {
         subtitle="Kurumsal temizlik ve iş güvenliği ürünleri."
         banner={images.banners.catalog}
       >
-        <div className="mt-10 max-w-xl">
+        <div className="mt-10 hidden max-w-xl lg:block">
           <CatalogSearch
             variant="hero"
             value={search}
@@ -189,7 +253,7 @@ export function CatalogPage() {
         </div>
       </PageHeader>
 
-      <section className="bg-white py-12 lg:py-16">
+      <section className="bg-white py-8 lg:py-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="lg:grid lg:grid-cols-[260px_1fr] lg:gap-14 xl:grid-cols-[280px_1fr]">
             <aside className="hidden lg:block">
@@ -197,7 +261,7 @@ export function CatalogPage() {
                 <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted">
                   Kategoriler
                 </p>
-                <nav className="mt-5 space-y-0.5 border-t border-navy-900/8 pt-5">
+                <nav className="mt-5 space-y-2 border-t border-navy-900/8 pt-5">
                   <CategoryNavItem
                     active={!selectedCategory}
                     onClick={() => handleCategory(null)}
@@ -206,14 +270,17 @@ export function CatalogPage() {
                     Tüm Ürünler
                   </CategoryNavItem>
                   {tree.map(({ cat, children, productCount }) => {
-                    const expanded =
-                      expandedParents.has(cat.slug) || activeParentSlug === cat.slug
+                    const expanded = expandedParents.has(cat.slug)
                     return (
                       <div key={cat.id}>
                         <ParentNavItem
                           active={selectedCategory === cat.slug}
                           expanded={expanded}
-                          onSelect={() => handleCategory(cat.slug)}
+                          onSelect={() => {
+                            const isCurrentParent = selectedCategory === cat.slug
+                            handleCategory(cat.slug)
+                            if (isCurrentParent) toggleParent(cat.slug)
+                          }}
                           onToggle={() => toggleParent(cat.slug)}
                           count={productCount}
                           hasChildren={children.length > 0}
@@ -223,19 +290,46 @@ export function CatalogPage() {
                         {expanded && children.length > 0 && (
                           <div className="ml-3 border-l border-navy-900/10 pl-1">
                             {children.map((child) => {
+                              const childCategoryIds = descendantCategoryIds(child.id, categories)
                               const count = products.filter(
-                                (p) => p.category?.slug === child.slug,
+                                (p) => p.category_id && childCategoryIds.has(p.category_id),
                               ).length
+                              const grandchildren = categories
+                                .filter((category) => category.parent_id === child.id || virtualParentBySlug[category.slug] === child.slug)
+                                .sort(compareCategories)
+                              const childExpanded = expandedParents.has(child.slug)
+
                               return (
-                                <CategoryNavItem
-                                  key={child.id}
-                                  active={selectedCategory === child.slug}
-                                  onClick={() => handleCategory(child.slug)}
-                                  count={count}
-                                  compact
-                                >
-                                  {child.name}
-                                </CategoryNavItem>
+                                <div key={child.id}>
+                                  {grandchildren.length > 0 ? (
+                                    <ParentNavItem
+                                      active={selectedCategory === child.slug}
+                                      expanded={childExpanded}
+                                      onSelect={() => {
+                                        handleCategory(child.slug)
+                                        if (selectedCategory === child.slug) toggleParent(child.slug)
+                                      }}
+                                      onToggle={() => toggleParent(child.slug)}
+                                      count={count}
+                                      hasChildren
+                                    >
+                                      {child.name}
+                                    </ParentNavItem>
+                                  ) : (
+                                    <CategoryNavItem active={selectedCategory === child.slug} onClick={() => handleCategory(child.slug)} count={count} compact>
+                                      {child.name}
+                                    </CategoryNavItem>
+                                  )}
+                                  {childExpanded && grandchildren.length > 0 && (
+                                    <div className="ml-3 border-l border-navy-900/10 pl-1">
+                                      {grandchildren.map((grandchild) => {
+                                        const grandchildIds = descendantCategoryIds(grandchild.id, categories)
+                                        const grandchildCount = products.filter((product) => product.category_id && grandchildIds.has(product.category_id)).length
+                                        return <CategoryNavItem key={grandchild.id} active={selectedCategory === grandchild.slug} onClick={() => handleCategory(grandchild.slug)} count={grandchildCount} compact>{grandchild.name}</CategoryNavItem>
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
                               )
                             })}
                           </div>
@@ -248,13 +342,14 @@ export function CatalogPage() {
             </aside>
 
             <div>
-              <FadeIn className="mb-8 space-y-5 lg:hidden">
+              <FadeIn className="mb-6 space-y-4 rounded-xl border border-navy-900/8 bg-surface/40 p-3 lg:hidden">
                 <CatalogSearch value={search} onChange={handleSearchChange} />
                 <CategoryFilter
                   categories={categories}
                   selected={selectedCategory}
                   onSelect={handleCategory}
                 />
+                <CatalogSortSelect value={sortOption} onChange={handleSortChange} fullWidth />
               </FadeIn>
 
               <FadeIn className="mb-10 hidden items-end justify-between border-b border-navy-900/8 pb-6 lg:flex">
@@ -266,6 +361,8 @@ export function CatalogPage() {
                     {loading ? 'Yükleniyor...' : `${filtered.length} ürün`}
                   </p>
                 </div>
+                <div className="flex items-center gap-4">
+                  <CatalogSortSelect value={sortOption} onChange={handleSortChange} />
                 {search && (
                   <button
                     type="button"
@@ -275,6 +372,7 @@ export function CatalogPage() {
                     Aramayı temizle
                   </button>
                 )}
+                </div>
               </FadeIn>
 
               <div className="mb-8 flex items-center justify-between border-b border-navy-900/8 pb-4 lg:hidden">
@@ -283,7 +381,7 @@ export function CatalogPage() {
               </div>
 
               {loading ? (
-                <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:gap-x-3 sm:gap-y-6 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-4">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-3 sm:gap-y-6 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-4">
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={i} className="animate-pulse">
                       <div className="aspect-square bg-surface" />
@@ -335,6 +433,23 @@ export function CatalogPage() {
         </div>
       </section>
     </>
+  )
+}
+
+function CatalogSortSelect({ value, onChange, fullWidth = false }: { value: SortOption; onChange: (value: SortOption) => void; fullWidth?: boolean }) {
+  return (
+    <label className={cn('relative flex items-center gap-2 text-xs font-semibold text-muted', fullWidth && 'w-full')}>
+      <ArrowDownUp className="h-4 w-4 shrink-0 text-accent-600" />
+      <span className="sr-only">Sıralama</span>
+      <select value={value} onChange={(event) => onChange(event.target.value as SortOption)} className={cn('appearance-none rounded-lg border border-navy-900/10 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-navy-900 outline-none transition focus:border-accent-600', fullWidth && 'w-full')}>
+        <option value="default">Önerilen sıralama</option>
+        <option value="name-asc">Ada göre A–Z</option>
+        <option value="name-desc">Ada göre Z–A</option>
+        <option value="price-asc">Fiyat: düşükten yükseğe</option>
+        <option value="price-desc">Fiyat: yüksekten düşüğe</option>
+      </select>
+      <ChevronDown className="pointer-events-none absolute right-2 h-3.5 w-3.5 text-muted" />
+    </label>
   )
 }
 
@@ -396,10 +511,10 @@ function ParentNavItem({
   return (
     <div
       className={cn(
-        'group flex w-full items-start border-l-2 pr-1 transition-colors',
+        'group flex w-full items-start rounded-lg border px-1 transition-colors',
         active
-          ? 'border-navy-900 font-semibold text-navy-900'
-          : 'border-transparent text-navy-900/80 hover:border-navy-900/20 hover:text-navy-900',
+          ? 'border-navy-900 bg-navy-900 font-semibold text-white shadow-sm'
+          : 'border-navy-900/8 bg-white text-navy-900/80 hover:border-navy-900/20 hover:bg-surface hover:text-navy-900',
       )}
     >
       <button
@@ -411,7 +526,7 @@ function ParentNavItem({
         <span
           className={cn(
             'mt-0.5 shrink-0 text-xs tabular-nums',
-            active ? 'text-navy-900/50' : 'text-muted/60 group-hover:text-muted',
+            active ? 'text-white/65' : 'text-muted/60 group-hover:text-muted',
           )}
         >
           {count}
@@ -422,7 +537,7 @@ function ParentNavItem({
           type="button"
           onClick={onToggle}
           aria-label={expanded ? 'Alt kategorileri gizle' : 'Alt kategorileri göster'}
-          className="ml-1 mt-2 shrink-0 rounded p-1 text-muted/70 hover:bg-navy-900/5 hover:text-navy-900"
+          className={cn('ml-1 mt-2 shrink-0 rounded p-1', active ? 'text-white/75 hover:bg-white/10 hover:text-white' : 'text-muted/70 hover:bg-navy-900/5 hover:text-navy-900')}
         >
           <ChevronDown
             className={cn('h-4 w-4 transition-transform', expanded && 'rotate-180')}

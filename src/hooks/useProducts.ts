@@ -36,7 +36,7 @@ function mapProduct(row: Product): Product {
 
 
 
-export function useProducts(options?: { includeInactive?: boolean }) {
+export function useProducts(options?: { includeInactive?: boolean; home?: boolean; compact?: boolean }) {
 
   const [products, setProducts] = useState<Product[]>([])
 
@@ -83,14 +83,18 @@ export function useProducts(options?: { includeInactive?: boolean }) {
           const { data, error } = await withFetchTimeout(
             supabase
               .from('products')
-              .select('*, category:categories(*)')
+              // Ana sayfanın kartları açıklama, SEO ve galeri verilerini kullanmaz.
+              // Bu alanları indirmemek ilk yüklemede birkaç MB veri transferini önler.
+              .select(options?.home || options?.compact
+                ? 'id,name,slug,price,stock,is_active,image_url,category_id,category:categories(id,name,slug,parent_id,sort_order)'
+                : '*, category:categories(*)')
               .order('created_at', { ascending: false })
               .order('sort_order', { ascending: true })
               .order('id', { ascending: true })
               .range(from, to),
           )
           if (error) throw error
-          const rows = (data ?? []) as Product[]
+          const rows = (data ?? []) as unknown as Product[]
           collected.push(...rows)
           if (rows.length < PAGE_SIZE) break
           from += PAGE_SIZE
@@ -139,7 +143,7 @@ export function useProducts(options?: { includeInactive?: boolean }) {
 
     }
 
-  }, [options?.includeInactive])
+  }, [options?.compact, options?.home, options?.includeInactive])
 
 
 

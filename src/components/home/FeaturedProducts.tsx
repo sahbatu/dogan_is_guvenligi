@@ -1,298 +1,99 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowRight, ArrowUpRight } from 'lucide-react'
+import { AnimatePresence, motion } from 'framer-motion'
 import type { Product } from '@/lib/supabase'
 import { ProductPrice } from '@/components/catalog/ProductPrice'
 import { FadeIn } from '@/components/ui/FadeIn'
-import { cn } from '@/lib/utils'
-
-const AUTOPLAY_MS = 4500
-const SLIDE_EASE = [0.32, 0.72, 0, 1] as const
 
 interface FeaturedProductsProps {
   products: Product[]
 }
 
+const AUTOPLAY_MS = 4800
+
+function pickRandom<T>(items: T[], count: number): T[] {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[randomIndex]] = [shuffled[randomIndex], shuffled[index]]
+  }
+  return shuffled.slice(0, count)
+}
+
 export function FeaturedProducts({ products }: FeaturedProductsProps) {
-  const featured = products.slice(0, 8)
-  const count = featured.length
-  const [active, setActive] = useState(0)
-  const [direction, setDirection] = useState(1)
-  const [paused, setPaused] = useState(false)
-  const activeRef = useRef(active)
-  activeRef.current = active
-
-  const goTo = useCallback(
-    (index: number, forcedDirection?: number) => {
-      if (count === 0) return
-      const nextIndex = (index + count) % count
-      const current = activeRef.current
-
-      if (forcedDirection !== undefined) {
-        setDirection(forcedDirection)
-      } else if (nextIndex !== current) {
-        const forward = (nextIndex - current + count) % count
-        const backward = (current - nextIndex + count) % count
-        setDirection(forward <= backward ? 1 : -1)
-      }
-
-      setActive(nextIndex)
-    },
-    [count],
+  const featured = useMemo(
+    () => pickRandom(products.filter((product) => Boolean(product.image_url) && product.price != null), 8),
+    [products],
   )
 
-  const next = useCallback(() => goTo(active + 1, 1), [active, goTo])
-  const prev = useCallback(() => goTo(active - 1, -1), [active, goTo])
+  const cardCount = Math.min(4, featured.length)
+  const pageCount = Math.max(1, Math.ceil(featured.length / Math.max(1, cardCount)))
+  const [activePage, setActivePage] = useState(0)
 
   useEffect(() => {
-    if (count === 0) return
-    setActive((a) => (a >= count ? 0 : a))
-  }, [count])
+    setActivePage((page) => page % pageCount)
+  }, [pageCount])
 
   useEffect(() => {
-    if (paused || count <= 1) return
-    const timer = setInterval(() => {
-      setDirection(1)
-      setActive((a) => (a + 1) % count)
-    }, AUTOPLAY_MS)
-    return () => clearInterval(timer)
-  }, [paused, count])
+    if (pageCount <= 1) return
+    const timer = window.setInterval(() => setActivePage((page) => (page + 1) % pageCount), AUTOPLAY_MS)
+    return () => window.clearInterval(timer)
+  }, [pageCount])
 
-  if (count === 0) return null
+  if (featured.length === 0) return null
 
-  const prevIdx = (active - 1 + count) % count
-  const nextIdx = (active + 1) % count
-  const showSides = count > 1
+  const visibleProducts = Array.from(
+    { length: cardCount },
+    (_, index) => featured[(activePage * cardCount + index) % featured.length],
+  )
 
   return (
-    <section
-      className="border-y border-navy-900/5 bg-surface/50 py-10 lg:py-12"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
+    <section className="border-y border-navy-900/5 bg-white py-16 lg:py-20">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
-        <FadeIn className="mb-8 flex items-center justify-between gap-4">
-          <h2 className="text-xl font-bold text-navy-900">Öne çıkan ürünler</h2>
-          <Link
-            to="/e-katalog"
-            className="flex items-center gap-1 text-sm font-semibold text-accent-600 hover:text-accent-500"
-          >
-            Tüm katalog
-            <ArrowUpRight className="h-4 w-4" />
-          </Link>
+        <FadeIn className="flex flex-col gap-5 border-b border-navy-900/8 pb-7 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-accent-600">Katalogdan seçtiklerimiz</p>
+            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-navy-900 sm:text-3xl">Öne çıkan ürünler</h2>
+            <p className="mt-2 max-w-xl text-sm leading-relaxed text-muted">İşletmenizin günlük temizlik, hijyen ve iş güvenliği ihtiyaçları için öne çıkan ürünleri inceleyin.</p>
+          </div>
+          <Link to="/e-katalog" className="inline-flex shrink-0 items-center gap-2 text-sm font-semibold text-navy-900 transition-colors hover:text-accent-600">Tüm ürünleri görüntüle <ArrowRight className="h-4 w-4" /></Link>
         </FadeIn>
 
-        <div className="relative px-2 sm:px-10">
-          {showSides && (
-            <>
-              <button
-                type="button"
-                onClick={prev}
-                className="absolute left-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-navy-900/10 bg-white text-navy-900 shadow-sm transition hover:bg-surface"
-                aria-label="Önceki ürün"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={next}
-                className="absolute right-0 top-1/2 z-20 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border border-navy-900/10 bg-white text-navy-900 shadow-sm transition hover:bg-surface"
-                aria-label="Sonraki ürün"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </button>
-            </>
-          )}
-
-          <div className="overflow-hidden">
-            <div className="flex items-center justify-center gap-4 sm:gap-6">
-              {showSides && (
-                <CarouselSlot
-                  product={featured[prevIdx]}
-                  slot="left"
-                  direction={direction}
-                  onClick={() => goTo(prevIdx, -1)}
-                  className="hidden sm:block"
-                />
-              )}
-
-              <CarouselSlot
-                product={featured[active]}
-                slot="center"
-                direction={direction}
-              />
-
-              {showSides && count > 2 && (
-                <CarouselSlot
-                  product={featured[nextIdx]}
-                  slot="right"
-                  direction={direction}
-                  onClick={() => goTo(nextIdx, 1)}
-                  className="hidden sm:block"
-                />
-              )}
-            </div>
-          </div>
+        <div className="mt-8 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activePage}
+              initial={{ opacity: 0, x: 48 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -48 }}
+              transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="grid grid-cols-2 gap-x-3 gap-y-7 sm:gap-x-5 lg:grid-cols-4"
+            >
+              {visibleProducts.map((product, index) => <FeaturedProductCard key={product.id} product={product} delay={index * 0.06} />)}
+            </motion.div>
+          </AnimatePresence>
         </div>
-
-        {showSides && (
-          <div className="mt-6 flex justify-center gap-1.5">
-            {featured.map((_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => goTo(i)}
-                className={cn(
-                  'h-1.5 rounded-full transition-all duration-300',
-                  i === active ? 'w-4 bg-accent-600' : 'w-1.5 bg-navy-900/15',
-                )}
-                aria-label={`Ürün ${i + 1}`}
-              />
-            ))}
-          </div>
-        )}
+        {pageCount > 1 && <div className="mt-7 flex justify-center gap-1.5">{Array.from({ length: pageCount }, (_, index) => <button key={index} type="button" onClick={() => setActivePage(index)} aria-label={`Ürün grubu ${index + 1}`} className={index === activePage ? 'h-1.5 w-5 rounded-full bg-accent-600 transition-all' : 'h-1.5 w-1.5 rounded-full bg-navy-900/15 transition-all hover:bg-navy-900/35'} />)}</div>}
       </div>
     </section>
   )
 }
 
-const centerVariants = {
-  enter: (dir: number) => ({
-    x: dir * 120,
-    opacity: 0,
-    scale: 0.92,
-  }),
-  center: {
-    x: 0,
-    opacity: 1,
-    scale: 1,
-  },
-  exit: (dir: number) => ({
-    x: dir * -120,
-    opacity: 0,
-    scale: 0.92,
-  }),
-}
-
-const sideVariants = {
-  enter: (dir: number) => ({
-    x: dir * 48,
-    opacity: 0,
-  }),
-  visible: {
-    x: 0,
-    opacity: 1,
-  },
-  exit: (dir: number) => ({
-    x: dir * -48,
-    opacity: 0,
-  }),
-}
-
-function CarouselSlot({
-  product,
-  slot,
-  direction,
-  onClick,
-  className,
-}: {
-  product: Product
-  slot: 'left' | 'center' | 'right'
-  direction: number
-  onClick?: () => void
-  className?: string
-}) {
-  const isCenter = slot === 'center'
-
+function FeaturedProductCard({ product, delay }: { product: Product; delay: number }) {
   return (
-    <div
-      className={cn(
-        'relative shrink-0',
-        isCenter
-          ? 'z-10 w-[min(72vw,300px)]'
-          : 'z-0 w-[180px] blur-[4px] transition-[filter] duration-500 hover:blur-[2px]',
-        !isCenter && onClick && 'cursor-pointer',
-        className,
-      )}
-      onClick={onClick}
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onKeyDown={
-        onClick
-          ? (e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault()
-                onClick()
-              }
-            }
-          : undefined
-      }
-    >
-      <AnimatePresence mode="popLayout" custom={direction} initial={false}>
-        <motion.div
-          key={product.id}
-          custom={direction}
-          variants={isCenter ? centerVariants : sideVariants}
-          initial="enter"
-          animate={isCenter ? 'center' : 'visible'}
-          exit="exit"
-          transition={{ duration: 0.42, ease: SLIDE_EASE }}
-          className={cn(!isCenter && 'opacity-50 hover:opacity-70')}
-        >
-          <ProductCard product={product} focused={isCenter} />
-        </motion.div>
-      </AnimatePresence>
-    </div>
-  )
-}
-
-function ProductCard({ product, focused }: { product: Product; focused: boolean }) {
-  return (
-    <Link
-      to={`/e-katalog/${product.slug}`}
-      onClick={(e) => {
-        if (!focused) e.preventDefault()
-      }}
-      className={cn(
-        'group block overflow-hidden rounded-xl bg-white transition-shadow duration-300',
-        focused
-          ? 'shadow-lg shadow-navy-900/10 ring-1 ring-navy-900/8 hover:shadow-xl'
-          : 'shadow-sm ring-1 ring-navy-900/5',
-      )}
-    >
-      <div className="relative aspect-[4/3] overflow-hidden bg-surface">
-        {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.name}
-            className={cn(
-              'h-full w-full object-cover transition-transform duration-500',
-              focused && 'group-hover:scale-105',
-            )}
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs text-muted">Görsel yok</div>
-        )}
-      </div>
-      <div className="p-4">
-        {product.category && (
-          <span className="text-[10px] font-bold uppercase tracking-wider text-accent-600">
-            {product.category.name}
-          </span>
-        )}
-        <h3
-          className={cn(
-            'mt-1 font-bold leading-snug text-navy-900',
-            focused ? 'text-base group-hover:text-accent-600' : 'text-sm line-clamp-2',
-          )}
-        >
-          {product.name}
-        </h3>
-        <div className="mt-1.5">
-          <ProductPrice price={product.price} />
+    <FadeIn delay={delay}>
+      <Link to={`/e-katalog/${product.slug}`} className="group block">
+        <div className="relative aspect-[4/4.6] overflow-hidden rounded-xl bg-surface ring-1 ring-navy-900/[0.06] transition-shadow duration-300 group-hover:shadow-lg group-hover:shadow-navy-900/10">
+          <img src={product.image_url!} alt={product.name} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+          {product.category && <span className="absolute left-3 top-3 rounded-full bg-white/90 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-navy-900 shadow-sm backdrop-blur-sm">{product.category.name}</span>}
+          <span className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full bg-navy-900 text-white opacity-0 shadow-lg transition-all duration-300 group-hover:opacity-100"><ArrowUpRight className="h-4 w-4" /></span>
         </div>
-      </div>
-    </Link>
+        <div className="pt-3">
+          <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-navy-900 transition-colors group-hover:text-accent-600 sm:text-[15px]">{product.name}</h3>
+          <ProductPrice price={product.price} className="mt-1.5 block" />
+        </div>
+      </Link>
+    </FadeIn>
   )
 }

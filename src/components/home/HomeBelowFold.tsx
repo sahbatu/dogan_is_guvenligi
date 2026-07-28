@@ -8,15 +8,15 @@ import { CTA } from '@/components/home/CTA'
 import { useProducts } from '@/hooks/useProducts'
 
 export function HomeBelowFold() {
-  const { products } = useProducts()
+  const { products, categories, loading } = useProducts({ home: true })
 
   return (
     <>
-      <CategoryShowcase />
+      <CategoryShowcase categories={categories} products={products} loading={loading} />
       <Services />
       <WhyUs />
       <Stats />
-      <Industries />
+      <Industries products={products} />
       <FeaturedProducts products={products} />
       <CTA />
     </>

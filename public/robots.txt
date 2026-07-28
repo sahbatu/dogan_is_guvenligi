@@ -2,4 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /admin/
 
-Sitemap: https://www.doganisguvenligi.com/sitemap.xml
+Sitemap: https://doganiselbiseleri.com.tr/sitemap.xml

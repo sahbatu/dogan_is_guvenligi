@@ -27,7 +27,7 @@ export function ProductGrid({ products, searchQuery }: ProductGridProps) {
   }
 
   return (
-    <div className="grid grid-cols-3 gap-x-2 gap-y-5 sm:gap-x-3 sm:gap-y-6 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-x-3 gap-y-6 sm:grid-cols-3 sm:gap-x-3 sm:gap-y-6 lg:gap-x-5 lg:gap-y-10 xl:grid-cols-4">
       {products.map((product) => (
           <Link key={product.id} to={`/e-katalog/${product.slug}`} className="group block">
             <motion.article
@@ -62,13 +62,13 @@ export function ProductGrid({ products, searchQuery }: ProductGridProps) {
                 </span>
               </div>
 
-              <div className="mt-1.5 flex items-start justify-between gap-1 sm:mt-3 sm:gap-3">
-                <h3 className="line-clamp-2 font-display text-[10px] font-semibold leading-tight text-navy-900 transition-colors group-hover:text-accent-600 sm:text-[15px] sm:leading-snug">
+              <div className="mt-2 flex items-start justify-between gap-1 sm:mt-3 sm:gap-3">
+                <h3 className="line-clamp-2 font-display text-xs font-semibold leading-snug text-navy-900 transition-colors group-hover:text-accent-600 sm:text-[15px]">
                   {product.name}
                 </h3>
               </div>
-              <div className="mt-0.5 sm:mt-1.5">
-                <ProductPrice price={product.price} className="text-[10px] sm:text-sm" />
+              <div className="mt-1 sm:mt-1.5">
+                <ProductPrice price={product.price} className="text-xs sm:text-sm" />
               </div>
             </motion.article>
           </Link>

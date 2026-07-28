@@ -21,7 +21,7 @@ export function ProductGallery({
 
   if (!images.length) {
     return (
-      <div className={cn('flex items-center justify-center bg-surface text-muted ring-1 ring-navy-900/[0.06]', aspectClass)}>
+        <div className={cn('flex items-center justify-center rounded-2xl bg-surface text-muted ring-1 ring-navy-900/[0.06]', aspectClass)}>
         Görsel yok
       </div>
     )
@@ -34,7 +34,7 @@ export function ProductGallery({
       <button
         type="button"
         onClick={() => setLightboxOpen(true)}
-        className="group relative block w-full overflow-hidden bg-surface ring-1 ring-navy-900/[0.06] transition-shadow hover:ring-navy-900/15"
+        className="group relative block w-full overflow-hidden rounded-2xl bg-surface ring-1 ring-navy-900/[0.06] transition-shadow hover:ring-navy-900/15"
         aria-label="Görseli büyüt"
       >
         <img

@@ -18,6 +18,7 @@ const LoginPage = lazy(() => import('@/pages/admin/LoginPage').then((m) => ({ de
 const AdminOverviewPage = lazy(() => import('@/pages/admin/AdminOverviewPage').then((m) => ({ default: m.AdminOverviewPage })))
 const ProductsAdminPage = lazy(() => import('@/pages/admin/ProductsAdminPage').then((m) => ({ default: m.ProductsAdminPage })))
 const PricesAdminPage = lazy(() => import('@/pages/admin/PricesAdminPage').then((m) => ({ default: m.PricesAdminPage })))
+const ProductExportPage = lazy(() => import('@/pages/admin/ProductExportPage').then((m) => ({ default: m.ProductExportPage })))
 const CategoriesAdminPage = lazy(() => import('@/pages/admin/CategoriesAdminPage').then((m) => ({ default: m.CategoriesAdminPage })))
 const BlogAdminPage = lazy(() => import('@/pages/admin/BlogAdminPage').then((m) => ({ default: m.BlogAdminPage })))
 const ProductEditPage = lazy(() => import('@/pages/admin/ProductEditPage').then((m) => ({ default: m.ProductEditPage })))
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="admin/panel/urunler/yeni" element={<ProductEditPage />} />
               <Route path="admin/panel/urunler/:productId/duzenle" element={<ProductEditPage />} />
               <Route path="admin/panel/fiyatlar" element={<PricesAdminPage />} />
+              <Route path="admin/panel/urunleri-disa-aktar" element={<ProductExportPage />} />
               <Route path="admin/panel/kategoriler" element={<CategoriesAdminPage />} />
               <Route path="admin/panel/blog" element={<BlogAdminPage />} />
               <Route path="admin/panel/blog/yeni" element={<BlogEditPage />} />

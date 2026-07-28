@@ -1,14 +1,10 @@
-import { lazy, Suspense } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { PageSeo } from '@/components/seo/PageSeo'
 import { images } from '@/data/images'
 import { lcpImagePreloadSrc } from '@/lib/image-src'
 import { useSiteData } from '@/contexts/SiteDataContext'
 import { Hero } from '@/components/home/Hero'
-
-const HomeBelowFold = lazy(() =>
-  import('@/components/home/HomeBelowFold').then((m) => ({ default: m.HomeBelowFold })),
-)
+import { HomeBelowFold } from '@/components/home/HomeBelowFold'
 
 export function HomePage() {
   const { settings } = useSiteData()
@@ -44,9 +40,7 @@ export function HomePage() {
         }}
       />
       <Hero />
-      <Suspense fallback={null}>
-        <HomeBelowFold />
-      </Suspense>
+      <HomeBelowFold />
     </>
   )
 }

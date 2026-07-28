@@ -43,6 +43,24 @@
     ],
     "fullWidth": 1200
   },
+  "/images/categories/category-towel-dispenser.png": {
+    "widths": [
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
+  "/images/categories/category-waste-bins.png": {
+    "widths": [
+      400,
+      480,
+      640,
+      720
+    ],
+    "fullWidth": 1000
+  },
   "/images/cta-warehouse.jpg": {
     "widths": [
       320,

@@ -120,7 +120,7 @@ export function ProductDetailPage() {
 
         fallbackImage={images[0] ?? null}
 
-        entity={product}
+        entity={{ ...product, canonical_path: `/e-katalog/${product.slug}` }}
 
         ogType="product"
 
@@ -140,24 +140,41 @@ export function ProductDetailPage() {
 
           '@type': 'Product',
 
+          '@id': `${settings.site_url?.replace(/\/$/, '') ?? ''}/e-katalog/${product.slug}#product`,
+
+          url: `${settings.site_url?.replace(/\/$/, '') ?? ''}/e-katalog/${product.slug}`,
+
           name: product.name,
 
           description: product.description ? stripHtml(product.description) : undefined,
 
           image: images.length > 1 ? images : images[0],
 
-          offers: product.price != null
+          sku: product.sku || undefined,
+
+          offers: product.price != null && product.price > 0
 
             ? {
 
                 '@type': 'Offer',
 
+                url: `${settings.site_url?.replace(/\/$/, '') ?? ''}/e-katalog/${product.slug}`,
+
                 price: product.price,
 
                 priceCurrency: 'TRY',
 
-                availability:
-                  getSchemaStockAvailability(product.stock) ?? 'https://schema.org/InStock',
+                availability: getSchemaStockAvailability(product.stock),
+
+                itemCondition: 'https://schema.org/NewCondition',
+
+                seller: {
+
+                  '@type': 'Organization',
+
+                  name: settings.company_name,
+
+                },
 
               }
 

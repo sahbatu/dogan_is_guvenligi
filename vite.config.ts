@@ -4,11 +4,35 @@ import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import tsconfigPaths from 'vite-tsconfig-paths'
+import type { Plugin } from 'vite'
 
 const root = path.dirname(fileURLToPath(import.meta.url))
 const src = path.join(root, 'src')
 
 const supabaseProxyPaths = ['/auth/v1', '/rest/v1', '/storage/v1', '/realtime/v1'] as const
+
+/**
+ * Vite preview normally sends the SPA shell for extensionless routes. Product
+ * pages have build-time SEO HTML at /e-katalog/:slug/index.html, so rewrite
+ * internally without changing the public URL or introducing a trailing slash.
+ */
+function productSeoPreviewRoutes(): Plugin {
+  return {
+    name: 'product-seo-preview-routes',
+    configurePreviewServer(server) {
+      server.middlewares.use((req, _res, next) => {
+        if (!req.url) return next()
+
+        const parsed = new URL(req.url, 'http://localhost')
+        if (/^\/e-katalog\/[^/]+\/?$/.test(parsed.pathname)) {
+          const pathname = parsed.pathname.replace(/\/$/, '')
+          req.url = `${pathname}/index.html${parsed.search}`
+        }
+        next()
+      })
+    },
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, root, '')
@@ -19,6 +43,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [
+      productSeoPreviewRoutes(),
       react(),
       tailwindcss(),
       tsconfigPaths({ projects: [path.join(root, 'tsconfig.app.json')] }),

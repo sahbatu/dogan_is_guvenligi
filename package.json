@@ -8,6 +8,7 @@
     "optimize:images": "tsx scripts/optimize-images.ts",
     "prebuild": "tsx scripts/copy-fonts.ts && tsx scripts/optimize-images.ts && tsx scripts/generate-prerender-routes.ts && tsx scripts/generate-sitemap.ts",
     "build": "tsc -b && vite build",
+    "postbuild": "node scripts/generate-product-seo-pages.mjs",
     "lint": "eslint .",
     "preview": "vite preview --port 3000 --strictPort --host 0.0.0.0",
     "start": "vite preview --port 3000 --strictPort --host 0.0.0.0"

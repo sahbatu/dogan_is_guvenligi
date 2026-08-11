@@ -87,6 +87,7 @@ async function main() {
     { loc: '/iletisim' },
     { loc: '/kvkk' },
     { loc: '/cerez-politikasi' },
+    { loc: '/iade-politikasi' },
   ]
 
   const supabaseUrl = process.env.VITE_SUPABASE_REMOTE_URL?.trim() || process.env.VITE_SUPABASE_URL?.trim()

@@ -116,6 +116,9 @@ export function Footer() {
             <Link to={LEGAL_PATHS.cookie} className="hover:text-white/70">
               Çerez Politikası
             </Link>
+            <Link to={LEGAL_PATHS.returns} className="hover:text-white/70">
+              İade ve Cayma Politikası
+            </Link>
           </div>
         </div>
       </div>

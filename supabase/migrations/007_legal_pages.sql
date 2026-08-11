@@ -18,10 +18,12 @@ ALTER TABLE contact_submissions ADD COLUMN IF NOT EXISTS kvkk_consent_at TIMESTA
 -- Seed yasal sayfalar (içerik admin'den güncellenebilir)
 INSERT INTO legal_pages (slug, title, content) VALUES
   ('kvkk', 'KVKK Aydınlatma Metni', ''),
-  ('cerez-politikasi', 'Çerez Politikası', '')
+  ('cerez-politikasi', 'Çerez Politikası', ''),
+  ('iade-politikasi', 'İade ve Cayma Politikası', '')
 ON CONFLICT (slug) DO NOTHING;
 
 INSERT INTO page_seo (path, meta_title, meta_description, meta_robots) VALUES
   ('/kvkk', 'KVKK Aydınlatma Metni', 'Kişisel verilerin korunması ve işlenmesine ilişkin aydınlatma metni.', 'index,follow'),
   ('/cerez-politikasi', 'Çerez Politikası', 'Web sitemizde kullanılan çerezler hakkında bilgilendirme.', 'index,follow')
+  ,('/iade-politikasi', 'İade ve Cayma Politikası', 'İade, cayma hakkı, geri ödeme ve iade süreci hakkında bilgilendirme.', 'index,follow')
 ON CONFLICT (path) DO NOTHING;

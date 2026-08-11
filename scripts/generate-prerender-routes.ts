@@ -2,7 +2,7 @@ import { writeFileSync } from 'node:fs'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnvFiles } from './load-env'
 
-const staticRoutes = ['/', '/hakkimizda', '/e-katalog', '/blog', '/iletisim', '/kvkk', '/cerez-politikasi']
+const staticRoutes = ['/', '/hakkimizda', '/e-katalog', '/blog', '/iletisim', '/kvkk', '/cerez-politikasi', '/iade-politikasi']
 const pageSize = 1000
 
 interface RouteRow {

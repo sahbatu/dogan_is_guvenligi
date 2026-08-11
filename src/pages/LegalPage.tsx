@@ -3,6 +3,7 @@ import { PageSeo } from '@/components/seo/PageSeo'
 import { RichTextContent } from '@/components/ui/RichTextContent'
 import { FadeIn } from '@/components/ui/FadeIn'
 import { getDefaultLegalPage, LEGAL_PATHS } from '@/lib/legal-defaults'
+import { useSiteData } from '@/contexts/SiteDataContext'
 
 interface LegalPageProps {
   slug: string
@@ -11,10 +12,16 @@ interface LegalPageProps {
 const PATH_BY_SLUG: Record<string, string> = {
   kvkk: LEGAL_PATHS.kvkk,
   'cerez-politikasi': LEGAL_PATHS.cookie,
+  'iade-politikasi': LEGAL_PATHS.returns,
 }
 
 export function LegalPage({ slug }: LegalPageProps) {
-  const page = getDefaultLegalPage(slug)
+  const { settings } = useSiteData()
+  const page = getDefaultLegalPage(slug, {
+    name: settings.company_name,
+    email: settings.email || '',
+    address: [settings.address, settings.city].filter(Boolean).join(', '),
+  })
   const path = PATH_BY_SLUG[slug]
 
   if (!page || !path) {
@@ -26,7 +33,9 @@ export function LegalPage({ slug }: LegalPageProps) {
       <PageSeo
         path={path}
         fallbackTitle={page.title}
-        fallbackDescription={`${page.title} — kişisel veriler ve çerez kullanımı hakkında bilgilendirme.`}
+        fallbackDescription={slug === 'iade-politikasi'
+          ? 'İade, cayma hakkı, geri ödeme ve iade süreci hakkında bilgilendirme.'
+          : `${page.title} — kişisel veriler ve çerez kullanımı hakkında bilgilendirme.`}
         breadcrumbs={[
           { name: 'Ana Sayfa', path: '/' },
           { name: page.title, path },

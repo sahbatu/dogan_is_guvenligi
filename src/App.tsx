@@ -54,6 +54,7 @@ export default function App() {
               <Route path="blog/:slug" element={<BlogDetailPage />} />
               <Route path="kvkk" element={<LegalPage slug="kvkk" />} />
               <Route path="cerez-politikasi" element={<LegalPage slug="cerez-politikasi" />} />
+              <Route path="iade-politikasi" element={<LegalPage slug="iade-politikasi" />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
             <Route path="admin/giris" element={<LoginPage />} />

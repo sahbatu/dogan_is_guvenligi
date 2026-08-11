@@ -10,6 +10,7 @@ const defaultSeo: Record<string, PageSeo> = {
   '/iletisim': { path: '/iletisim', meta_title: 'İletişim', meta_description: 'İletişim bilgileri.', updated_at: '' },
   '/kvkk': { path: '/kvkk', meta_title: 'KVKK Aydınlatma Metni', meta_description: 'Kişisel verilerin korunması aydınlatma metni.', updated_at: '' },
   '/cerez-politikasi': { path: '/cerez-politikasi', meta_title: 'Çerez Politikası', meta_description: 'Çerez kullanımı hakkında bilgilendirme.', updated_at: '' },
+  '/iade-politikasi': { path: '/iade-politikasi', meta_title: 'İade ve Cayma Politikası', meta_description: 'İade, cayma hakkı, geri ödeme ve iade süreci hakkında bilgilendirme.', updated_at: '' },
 }
 
 export function usePageSeo(path?: string) {

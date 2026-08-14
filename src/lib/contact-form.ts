@@ -11,7 +11,13 @@ export const CONTACT_LIMITS = {
 const PHONE_MIN_DIGITS = 10
 const PHONE_MAX_DIGITS = CONTACT_LIMITS.phone
 
-const CONTROL_CHARS = /[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g
+// Keep line breaks and tabs for message formatting while filtering other C0
+// control characters. Constructing the range avoids an ESLint false positive
+// without changing the accepted input set.
+const CONTROL_CHARS = new RegExp(
+  `[${String.fromCharCode(0)}-${String.fromCharCode(8)}${String.fromCharCode(11)}${String.fromCharCode(12)}${String.fromCharCode(14)}-${String.fromCharCode(31)}${String.fromCharCode(127)}]`,
+  'g',
+)
 const EMAIL_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
 const PHONE_DIGITS_RE = /^\d{10,11}$/
 

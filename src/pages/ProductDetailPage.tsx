@@ -130,6 +130,8 @@ export function ProductDetailPage() {
 
           { name: 'E-Katalog', path: '/e-katalog' },
 
+          ...(product.category ? [{ name: product.category.name, path: `/e-katalog/kategori/${product.category.slug}` }] : []),
+
           { name: product.name, path: `/e-katalog/${product.slug}` },
 
         ]}
@@ -191,6 +193,28 @@ export function ProductDetailPage() {
         <div className="mx-auto max-w-6xl px-6 lg:px-8">
 
           <FadeIn>
+
+            <nav aria-label="Sayfa yolu" className="flex flex-wrap items-center gap-2 text-sm text-muted">
+
+              <Link to="/" className="transition-colors hover:text-accent-600">Ana Sayfa</Link>
+
+              <span aria-hidden="true">/</span>
+
+              <Link to="/e-katalog" className="transition-colors hover:text-accent-600">E-Katalog</Link>
+
+              {product.category && <>
+
+                <span aria-hidden="true">/</span>
+
+                <Link to={`/e-katalog/kategori/${product.category.slug}`} className="transition-colors hover:text-accent-600">{product.category.name}</Link>
+
+              </>}
+
+              <span aria-hidden="true">/</span>
+
+              <span className="max-w-full truncate font-medium text-navy-900" aria-current="page">{product.name}</span>
+
+            </nav>
 
             <Link
 

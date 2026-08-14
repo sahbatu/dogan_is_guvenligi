@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { ArrowDownUp, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageMeta'
 import { PageSeo } from '@/components/seo/PageSeo'
@@ -94,9 +94,11 @@ function buildCategoryTree(categories: Category[]): CategoryTreeNode[] {
 
 export function CatalogPage() {
   const { settings } = useSiteData()
+  const { categorySlug: routeCategorySlug } = useParams<{ categorySlug: string }>()
+  const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [selectedCategory, setSelectedCategory] = useState<string | null>(
-    searchParams.get('kategori'),
+    routeCategorySlug ?? searchParams.get('kategori'),
   )
   const [search, setSearch] = useState('')
   const sortOption = (searchParams.get('siralama') ?? 'default') as CatalogSort
@@ -105,17 +107,13 @@ export function CatalogPage() {
   const { products, categories, total, loading } = useCatalogProducts({ categorySlug: selectedCategory, search, page: requestedPage, pageSize: PAGE_SIZE, sort: sortOption })
 
   useEffect(() => {
-    const cat = searchParams.get('kategori')
+    const cat = routeCategorySlug ?? searchParams.get('kategori')
     setSelectedCategory(cat)
-  }, [searchParams])
+  }, [routeCategorySlug, searchParams])
 
   const handleCategory = (slug: string | null) => {
     setSelectedCategory(slug)
-    if (slug) {
-      setSearchParams({ kategori: slug })
-    } else {
-      setSearchParams({})
-    }
+    navigate(slug ? `/e-katalog/kategori/${slug}` : '/e-katalog')
   }
 
   const handleSearchChange = (value: string) => {
@@ -171,14 +169,13 @@ export function CatalogPage() {
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
   const currentPage = Math.min(requestedPage, totalPages)
 
-  const goToPage = (page: number) => {
+  const catalogPath = selectedCategory ? `/e-katalog/kategori/${selectedCategory}` : '/e-katalog'
+  const pageHref = (page: number) => {
     const target = Math.min(Math.max(1, page), totalPages)
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (target <= 1) next.delete('sayfa')
-      else next.set('sayfa', String(target))
-      return next
-    })
+    return target <= 1 ? catalogPath : `${catalogPath}?sayfa=${target}`
+  }
+
+  const scrollToCatalog = () => {
     if (typeof window !== 'undefined') {
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -186,16 +183,20 @@ export function CatalogPage() {
 
   const activeCategoryName =
     categories.find((c) => c.slug === selectedCategory)?.name ?? 'Tüm Ürünler'
+  const canonicalPath = currentPage > 1 ? `${catalogPath}?sayfa=${currentPage}` : catalogPath
+  const isIndexable = !search && sortOption === 'default'
 
   return (
     <>
       <PageSeo
-        path="/e-katalog"
-        fallbackTitle="E-Katalog"
-        fallbackDescription={`${settings.company_name} ürün kataloğu.`}
+        path={canonicalPath}
+        entity={{ canonical_path: canonicalPath, meta_robots: isIndexable ? 'index,follow' : 'noindex,follow' }}
+        fallbackTitle={selectedCategory ? `${activeCategoryName} Ürünleri` : 'E-Katalog'}
+        fallbackDescription={selectedCategory ? `${activeCategoryName} kategorisindeki kurumsal ürünleri inceleyin.` : `${settings.company_name} ürün kataloğu.`}
         breadcrumbs={[
           { name: 'Ana Sayfa', path: '/' },
           { name: 'E-Katalog', path: '/e-katalog' },
+          ...(selectedCategory ? [{ name: activeCategoryName, path: catalogPath }] : []),
         ]}
       />
       <PageHeader
@@ -224,7 +225,7 @@ export function CatalogPage() {
                 <nav className="mt-5 space-y-2 border-t border-navy-900/8 pt-5">
                   <CategoryNavItem
                     active={!selectedCategory}
-                    onClick={() => handleCategory(null)}
+                    to="/e-katalog"
                     count={total}
                   >
                     Tüm Ürünler
@@ -236,11 +237,7 @@ export function CatalogPage() {
                         <ParentNavItem
                           active={selectedCategory === cat.slug}
                           expanded={expanded}
-                          onSelect={() => {
-                            const isCurrentParent = selectedCategory === cat.slug
-                            handleCategory(cat.slug)
-                            if (isCurrentParent) toggleParent(cat.slug)
-                          }}
+                          to={`/e-katalog/kategori/${cat.slug}`}
                           onToggle={() => toggleParent(cat.slug)}
                           hasChildren={children.length > 0}
                         >
@@ -260,24 +257,21 @@ export function CatalogPage() {
                                     <ParentNavItem
                                       active={selectedCategory === child.slug}
                                       expanded={childExpanded}
-                                      onSelect={() => {
-                                        handleCategory(child.slug)
-                                        if (selectedCategory === child.slug) toggleParent(child.slug)
-                                      }}
+                                      to={`/e-katalog/kategori/${child.slug}`}
                                       onToggle={() => toggleParent(child.slug)}
                                       hasChildren
                                     >
                                       {child.name}
                                     </ParentNavItem>
                                   ) : (
-                                    <CategoryNavItem active={selectedCategory === child.slug} onClick={() => handleCategory(child.slug)} compact>
+                                    <CategoryNavItem active={selectedCategory === child.slug} to={`/e-katalog/kategori/${child.slug}`} compact>
                                       {child.name}
                                     </CategoryNavItem>
                                   )}
                                   {childExpanded && grandchildren.length > 0 && (
                                     <div className="ml-3 border-l border-navy-900/10 pl-1">
                                       {grandchildren.map((grandchild) => {
-                                        return <CategoryNavItem key={grandchild.id} active={selectedCategory === grandchild.slug} onClick={() => handleCategory(grandchild.slug)} compact>{grandchild.name}</CategoryNavItem>
+                                        return <CategoryNavItem key={grandchild.id} active={selectedCategory === grandchild.slug} to={`/e-katalog/kategori/${grandchild.slug}`} compact>{grandchild.name}</CategoryNavItem>
                                       })}
                                     </div>
                                   )}
@@ -352,29 +346,31 @@ export function CatalogPage() {
                         toplam {total} ürün
                       </p>
                       <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => goToPage(currentPage - 1)}
-                          disabled={currentPage === 1}
-                          className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Önceki sayfa"
-                        >
-                          <ChevronLeft className="h-4 w-4" />
-                          Önceki
-                        </button>
+                        {currentPage === 1 ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 opacity-40" aria-label="Önceki sayfa">
+                            <ChevronLeft className="h-4 w-4" />
+                            Önceki
+                          </span>
+                        ) : (
+                          <Link to={pageHref(currentPage - 1)} onClick={scrollToCatalog} className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface" aria-label="Önceki sayfa">
+                            <ChevronLeft className="h-4 w-4" />
+                            Önceki
+                          </Link>
+                        )}
                         <span className="text-xs text-muted tabular-nums">
                           Sayfa {currentPage} / {totalPages}
                         </span>
-                        <button
-                          type="button"
-                          onClick={() => goToPage(currentPage + 1)}
-                          disabled={currentPage === totalPages}
-                          className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface disabled:cursor-not-allowed disabled:opacity-40"
-                          aria-label="Sonraki sayfa"
-                        >
-                          Sonraki
-                          <ChevronRight className="h-4 w-4" />
-                        </button>
+                        {currentPage === totalPages ? (
+                          <span className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 opacity-40" aria-label="Sonraki sayfa">
+                            Sonraki
+                            <ChevronRight className="h-4 w-4" />
+                          </span>
+                        ) : (
+                          <Link to={pageHref(currentPage + 1)} onClick={scrollToCatalog} className="inline-flex items-center gap-1 rounded-lg border border-navy-900/10 bg-white px-3 py-2 text-xs font-medium text-navy-900 transition-colors hover:bg-surface" aria-label="Sonraki sayfa">
+                            Sonraki
+                            <ChevronRight className="h-4 w-4" />
+                          </Link>
+                        )}
                       </div>
                     </FadeIn>
                   )}
@@ -407,21 +403,20 @@ function CatalogSortSelect({ value, onChange, fullWidth = false }: { value: Cata
 
 function CategoryNavItem({
   active,
-  onClick,
+  to,
   count,
   compact = false,
   children,
 }: {
   active: boolean
-  onClick: () => void
+  to: string
   count?: number
   compact?: boolean
   children: ReactNode
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      to={to}
       className={cn(
         'group flex w-full items-start justify-between gap-2 border-l-2 pr-2 text-left transition-colors',
         compact ? 'py-1.5 pl-3 text-[13px]' : 'py-2.5 pl-4 text-sm',
@@ -439,14 +434,14 @@ function CategoryNavItem({
       >
         {count}
       </span>}
-    </button>
+    </Link>
   )
 }
 
 function ParentNavItem({
   active,
   expanded,
-  onSelect,
+  to,
   onToggle,
   count,
   hasChildren,
@@ -454,7 +449,7 @@ function ParentNavItem({
 }: {
   active: boolean
   expanded: boolean
-  onSelect: () => void
+  to: string
   onToggle: () => void
   count?: number
   hasChildren: boolean
@@ -469,9 +464,8 @@ function ParentNavItem({
           : 'border-navy-900/8 bg-white text-navy-900/80 hover:border-navy-900/20 hover:bg-surface hover:text-navy-900',
       )}
     >
-      <button
-        type="button"
-        onClick={onSelect}
+      <Link
+        to={to}
         className="flex min-w-0 flex-1 items-start justify-between gap-2 py-2.5 pl-4 pr-2 text-left text-sm"
       >
         <span className="min-w-0 flex-1 break-words leading-snug">{children}</span>
@@ -483,7 +477,7 @@ function ParentNavItem({
         >
           {count}
         </span>}
-      </button>
+      </Link>
       {hasChildren && (
         <button
           type="button"

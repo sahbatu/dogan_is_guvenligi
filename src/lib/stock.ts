@@ -30,7 +30,10 @@ export function formatStock(stock: number | null | undefined): string | null {
 
 export function getSchemaStockAvailability(
   stock: number | null | undefined,
-): 'https://schema.org/InStock' | 'https://schema.org/OutOfStock' | undefined {
-  if (stock == null) return undefined
+): 'https://schema.org/InStock' | 'https://schema.org/OutOfStock' {
+  // Stok adedi girilmemiş ürünler siparişe açıktır; teslim süresi ayrıca
+  // teklif/iletişim sürecinde netleşir. Bu nedenle şemada satın alınabilir
+  // ürün olarak bildirilir, yalnızca açıkça 0 olanlar OutOfStock kalır.
+  if (stock == null) return 'https://schema.org/InStock'
   return stock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock'
 }

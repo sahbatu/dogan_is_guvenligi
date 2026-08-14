@@ -117,16 +117,38 @@ function productSchema(product, canonical, images, sellerName) {
       price,
       priceCurrency: 'TRY',
       itemCondition: 'https://schema.org/NewCondition',
-      availability: product.stock == null
-        ? undefined
-        : product.stock > 0
-          ? 'https://schema.org/InStock'
-          : 'https://schema.org/OutOfStock',
+      // NULL means the quantity is intentionally not tracked publicly, not
+      // that the product is unavailable. The product remains orderable.
+      availability: product.stock == null || product.stock > 0
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
       seller: sellerName ? { '@type': 'Organization', name: sellerName } : undefined,
     }
   }
 
   return schema
+}
+
+function productBreadcrumbSchema(product, canonical, siteUrl) {
+  const items = [
+    { name: 'Ana Sayfa', item: `${siteUrl}/` },
+    { name: 'E-Katalog', item: `${siteUrl}/e-katalog` },
+  ]
+  if (product.category?.slug && product.category?.name) {
+    items.push({ name: product.category.name, item: `${siteUrl}/e-katalog/kategori/${product.category.slug}` })
+  }
+  items.push({ name: product.name, item: canonical })
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map((item, index) => ({ '@type': 'ListItem', position: index + 1, ...item })),
+  }
+}
+
+function productStaticBody(product, canonical, images) {
+  const categoryLink = product.category?.slug ? `/e-katalog/kategori/${product.category.slug}` : '/e-katalog'
+  const description = stripHtml(product.description) || `${product.name} ürün detayları.`
+  return `<main><nav aria-label="Breadcrumb"><a href="/">Ana Sayfa</a> / <a href="/e-katalog">E-Katalog</a>${product.category?.name ? ` / <a href="${escapeHtml(categoryLink)}">${escapeHtml(product.category.name)}</a>` : ''} / <span aria-current="page">${escapeHtml(product.name)}</span></nav><article><h1>${escapeHtml(product.name)}</h1>${images[0] ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(product.name)}" />` : ''}<p>${escapeHtml(description)}</p>${product.price != null && Number(product.price) > 0 ? `<p>Fiyat: ${escapeHtml(String(product.price))} TRY</p>` : '<p>Fiyat ve teklif bilgisi için iletişime geçin.</p>'}<p><a href="${escapeHtml(categoryLink)}">${escapeHtml(product.category?.name || 'E-Katalog')} ürünlerini inceleyin</a></p><p><a href="/iletisim?urun=${encodeURIComponent(product.name)}">Bu ürün için teklif alın</a></p></article></main>`
 }
 
 function replaceHead(html, product, settings, siteUrl, storageUrl) {
@@ -142,7 +164,11 @@ function replaceHead(html, product, settings, siteUrl, storageUrl) {
   const customOgImages = normalizeImages({ image_url: product.og_image_url, image_urls: [] }, siteUrl, storageUrl)
   const ogImage = customOgImages[0] || images[0] || absoluteUrl(siteUrl, settings.default_og_image_url)
   const robots = product.meta_robots?.trim() || settings.default_meta_robots?.trim() || 'index,follow'
-  const schema = productSchema(product, canonical, images, settings.company_name)
+  const schemas = [
+    productSchema(product, canonical, images, settings.company_name),
+    productBreadcrumbSchema(product, canonical, siteUrl),
+    ...(Array.isArray(product.schema_json) ? product.schema_json : product.schema_json ? [product.schema_json] : []),
+  ]
 
   const tags = [
     `<title data-rh="true">${escapeHtml(title)}</title>`,
@@ -155,13 +181,14 @@ function replaceHead(html, product, settings, siteUrl, storageUrl) {
     `<meta data-rh="true" property="og:url" content="${escapeHtml(canonical)}" />`,
     `<meta data-rh="true" property="og:type" content="${escapeHtml(product.og_type?.trim() || 'product')}" />`,
     `<meta data-rh="true" name="twitter:card" content="${escapeHtml(product.twitter_card?.trim() || 'summary_large_image')}" />`,
-    `<script data-rh="true" type="application/ld+json">${safeJson(schema)}</script>`,
+    `<script data-rh="true" type="application/ld+json">${safeJson(schemas)}</script>`,
   ].filter(Boolean).join('\n    ')
 
   return html
     .replace(/\s*<title>[^<]*<\/title>/i, '')
     .replace(/\s*<meta\s+name="description"[^>]*>/i, '')
     .replace('</head>', `    ${tags}\n  </head>`)
+    .replace('<div id="root"></div>', `<div id="root">${productStaticBody(product, canonical, images)}</div>`)
 }
 
 async function fetchAllProducts(supabase) {
@@ -171,7 +198,7 @@ async function fetchAllProducts(supabase) {
   while (true) {
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,slug,description,image_url,image_urls,price,stock,sku,meta_title,meta_description,meta_robots,canonical_path,og_title,og_description,og_image_url,og_type,twitter_card')
+      .select('id,name,slug,description,image_url,image_urls,price,stock,sku,meta_title,meta_description,meta_robots,canonical_path,og_title,og_description,og_image_url,og_type,twitter_card,schema_json,category:categories(id,name,slug,parent_id)')
       .eq('is_active', true)
       .order('id', { ascending: true })
       .range(from, from + pageSize - 1)

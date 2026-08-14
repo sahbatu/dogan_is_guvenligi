@@ -24,7 +24,16 @@ function productSeoPreviewRoutes(): Plugin {
         if (!req.url) return next()
 
         const parsed = new URL(req.url, 'http://localhost')
-        if (/^\/e-katalog\/[^/]+\/?$/.test(parsed.pathname)) {
+        if (parsed.pathname === '/e-katalog' || parsed.pathname === '/e-katalog/') {
+          const page = Number.parseInt(parsed.searchParams.get('sayfa') ?? '1', 10)
+          if (Number.isInteger(page) && page > 1) {
+            req.url = `/e-katalog/sayfa/${page}/index.html${parsed.search}`
+          }
+        } else if (/^\/e-katalog\/kategori\/[^/]+\/?$/.test(parsed.pathname)) {
+          const pathname = parsed.pathname.replace(/\/$/, '')
+          const page = Number.parseInt(parsed.searchParams.get('sayfa') ?? '1', 10)
+          req.url = page > 1 ? `${pathname}/sayfa/${page}/index.html${parsed.search}` : `${pathname}/index.html${parsed.search}`
+        } else if (/^\/e-katalog\/[^/]+\/?$/.test(parsed.pathname)) {
           const pathname = parsed.pathname.replace(/\/$/, '')
           req.url = `${pathname}/index.html${parsed.search}`
         }

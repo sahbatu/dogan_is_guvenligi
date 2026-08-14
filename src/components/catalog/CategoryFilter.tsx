@@ -23,7 +23,12 @@ export function CategoryFilter({ categories, selected, onSelect }: CategoryFilte
   }, [categories, query])
   const childrenOf = (category: Category) => sortCategories(categories.filter((item) => item.parent_id === category.id || virtualParentBySlug[item.slug] === category.slug))
   const choose = (slug: string | null) => { onSelect(slug); setOpen(false); setQuery('') }
-  const toggle = (slug: string) => setExpanded((current) => { const next = new Set(current); next.has(slug) ? next.delete(slug) : next.add(slug); return next })
+  const toggle = (slug: string) => setExpanded((current) => {
+    const next = new Set(current)
+    if (next.has(slug)) next.delete(slug)
+    else next.add(slug)
+    return next
+  })
 
   const CategoryRow = ({ category, depth = 0 }: { category: Category; depth?: number }) => {
     const children = childrenOf(category)

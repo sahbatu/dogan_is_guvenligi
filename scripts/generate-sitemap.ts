@@ -16,6 +16,16 @@ interface SitemapRow {
   updated_at?: string | null
 }
 
+interface CategoryRow extends SitemapRow {
+  id: string
+  parent_id: string | null
+}
+
+interface ProductCategoryRow {
+  category_id: string | null
+  updated_at?: string | null
+}
+
 const pageSize = 1000
 
 async function writeFileWithRetry(path: string, content: string): Promise<void> {
@@ -96,13 +106,19 @@ async function main() {
   if (supabaseUrl && supabaseKey) {
     try {
       const supabase = createClient(supabaseUrl, supabaseKey)
-      const [{ data: pageSeo }, products, posts] = await Promise.all([
+      const [{ data: pageSeo }, products, posts, categories, productCategories] = await Promise.all([
         supabase.from('page_seo').select('path, updated_at'),
         fetchAllRows<SitemapRow>((from, to) =>
           supabase.from('products').select('slug, updated_at').eq('is_active', true).range(from, to),
         ),
         fetchAllRows<SitemapRow>((from, to) =>
           supabase.from('blog_posts').select('slug, updated_at').eq('is_published', true).range(from, to),
+        ),
+        fetchAllRows<CategoryRow>((from, to) =>
+          supabase.from('categories').select('id,slug,parent_id').range(from, to),
+        ),
+        fetchAllRows<ProductCategoryRow>((from, to) =>
+          supabase.from('products').select('category_id,updated_at').eq('is_active', true).range(from, to),
         ),
       ])
 
@@ -114,6 +130,21 @@ async function main() {
       products?.forEach((product) => {
         if (product.slug) {
           urls.push({ loc: `/e-katalog/${product.slug}`, lastmod: toLastmod(product.updated_at as string) })
+        }
+      })
+
+      const activeCategoryIds = new Set(productCategories.filter((product) => product.category_id).map((product) => product.category_id!))
+      const categoriesById = new Map(categories.map((category) => [category.id, category]))
+      for (const categoryId of [...activeCategoryIds]) {
+        let current = categoriesById.get(categoryId)
+        while (current?.parent_id) {
+          activeCategoryIds.add(current.parent_id)
+          current = categoriesById.get(current.parent_id)
+        }
+      }
+      categories.forEach((category) => {
+        if (category.slug && activeCategoryIds.has(category.id)) {
+          urls.push({ loc: `/e-katalog/kategori/${category.slug}`, lastmod: toLastmod(category.updated_at) })
         }
       })
 

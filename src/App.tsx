@@ -49,6 +49,7 @@ export default function App() {
               <Route path="hakkimizda" element={<AboutPage />} />
               <Route path="iletisim" element={<ContactPage />} />
               <Route path="e-katalog" element={<CatalogPage />} />
+              <Route path="e-katalog/kategori/:categorySlug" element={<CatalogPage />} />
               <Route path="e-katalog/:slug" element={<ProductDetailPage />} />
               <Route path="blog" element={<BlogPage />} />
               <Route path="blog/:slug" element={<BlogDetailPage />} />
